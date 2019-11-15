@@ -2,6 +2,9 @@ import numpy as np
 import cv2
 from matplotlib import pyplot as plt
 
+#requires pip install opencv-python==3.3.0.10 opencv-contrib-python==3.3.0.10
+#use a virtual environemtn of python 3
+
 MIN_MATCH_COUNT = 40
 
 img1 = cv2.imread('guiness_hard2.jpg',0)          # queryImage
