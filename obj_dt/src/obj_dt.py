@@ -3,6 +3,7 @@ import cv2                                # state of the art computer vision alg
 import numpy as np                        # fundamental package for scientific computing
 #import matplotlib.pyplot as plt           # 2D plotting library producing publication quality figures
 import pyrealsense2 as rs                 # Intel RealSense cross-platform open-source API
+import rospy
 print("Environment Ready")
 
 
