@@ -9,8 +9,8 @@ MIN_MATCH_COUNT = 50
 
 FLAG = 1
 
-img1 = cv2.imread('test3.png',0)          # queryImage
-img2 = cv2.imread('train.png',0) # trainImage
+img1 = cv2.imread('kin_test_m.jpg',0)          # queryImage
+img2 = cv2.imread('kin_test_s.jpg',0) # trainImage
 
 # Initiate SIFT detector
 surf = cv2.xfeatures2d.SURF_create()
@@ -102,11 +102,11 @@ if FLAG:
 else:
     print("Not enough matches are found")
 
-#draw_params = dict(matchColor = (0,255,0), # draw matches in green color
-#                   singlePointColor = None,
-#                   matchesMask = matchesMask, # draw only inliers
-#                   flags = 2)
+draw_params = dict(matchColor = (0,255,0), # draw matches in green color
+                   singlePointColor = None,
+                   matchesMask = matchesMask, # draw only inliers
+                   flags = 2)
 
-#img3 = cv2.drawMatches(img1,kp1,img2,kp2,good,None,**draw_params)
+img3 = cv2.drawMatches(img1,kp1,img2,kp2,good,None,**draw_params)
 
-#plt.imshow(img3, 'gray'),plt.show()
+plt.imshow(img3, 'gray'),plt.show()
