@@ -51,7 +51,7 @@
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>cv_bridge</build_depend>
   <build_depend>python-numpy</build_depend>
-  <build_depend>pyrealsense2</build_depend>
+  <!-- <build_depend>pyrealsense2</build_depend> -->
   <!-- <build_depend>librealsense2</build_depend> -->
   <build_depend>rospy</build_depend>
   <build_depend>std_msgs</build_depend>
@@ -60,13 +60,13 @@
   <build_export_depend>rospy</build_export_depend>
   <build_export_depend>std_msgs</build_export_depend>
   <build_export_depend>python-numpy</build_export_depend>
-  <build_export_depend>pyrealsense2</build_export_depend>
+  <!-- <build_export_depend>pyrealsense2</build_export_depend> -->
   <exec_depend>cv_bridge</exec_depend>
   <!-- <exec_depend>librealsense2</exec_depend> -->
   <exec_depend>rospy</exec_depend>
   <exec_depend>std_msgs</exec_depend>
   <exec_depend>python-numpy</exec_depend>
-  <exec_depend>pyrealsense2</exec_depend>
+  <!-- <exec_depend>pyrealsense2</exec_depend> -->
 
 
   <!-- The export tag contains other, unspecified, tags -->

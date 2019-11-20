@@ -11,6 +11,7 @@ pipe = rs.pipeline()
 config = rs.config()
 config.enable_stream(rs.stream.color, 424, 240, rs.format.rgb8, 30)
 config.enable_stream(rs.stream.depth, 424, 240, rs.format.z16, 30)
+# without config it defaults to 640, 480
 profile = pipe.start(config)
 
 
@@ -91,10 +92,12 @@ plt.show()
 # Standard OpenCV boilerplate for running the net:
 height, width = color.shape[:2]
 expected = 300
-aspect = width / height
-resized_image = cv2.resize(color, (round(expected * aspect), expected))
-crop_start = round(expected * (aspect - 1) / 2)
+aspect = float(width) / float(height)
+
+resized_image = cv2.resize(color, (int(round(expected * aspect)), expected))
+crop_start = int(round(expected * (aspect - 1) / 2))
 crop_img = resized_image[0:expected, crop_start:crop_start+expected]
+print("width = {0}, height = {1}, aspect = {2}, crop_start = {3}".format(width, height, aspect, crop_start))
 
 net = cv2.dnn.readNetFromCaffe("MobileNetSSD_deploy.prototxt.txt", "MobileNetSSD_deploy.caffemodel")
 inScaleFactor = 0.007843
@@ -108,8 +111,6 @@ classNames = ("background", "aeroplane", "bicycle", "bird", "boat",
 blob = cv2.dnn.blobFromImage(crop_img, inScaleFactor, (expected, expected), meanVal, False)
 net.setInput(blob, "data")
 detections = net.forward("detection_out")
-
-
 
 label = detections[0,0,0,1]
 conf  = detections[0,0,0,2]
@@ -131,7 +132,7 @@ plt.imshow(crop_img)
 plt.show()
 
 
-scale = height / expected
+scale = float(height) / float(expected)
 xmin_depth = int((xmin * expected + crop_start) * scale)
 ymin_depth = int((ymin * expected) * scale)
 xmax_depth = int((xmax * expected + crop_start) * scale)
@@ -163,7 +164,7 @@ avg_z = dist
 intr = profile.get_stream(rs.stream.depth) # Fetch stream profile for depth stream
 intr = intr.as_video_stream_profile().get_intrinsics() 
 
-realx, realy, realz = rs.rs2_deproject_pixel_to_point(intr, [avg_x,avg_y],avg_z)
-
+realx, realy, realz = rs.rs2_deproject_pixel_to_point(intr, [int(avg_x),int(avg_y)],float(avg_z))
+print("Pixel coord: x = {0}, y = {1}, z = {2}".format(avg_x,avg_y,avg_z))
 display = (realx, realy, realz)
 print("Detected a {0} at (x, y, z) : ({1:.3}, {2:.3}, {3:.3}).".format(className, display[0], display[1], display[2]))
