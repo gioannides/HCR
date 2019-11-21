@@ -22,22 +22,17 @@ config = rs.config()
 config.enable_stream(rs.stream.color, 424, 240, rs.format.rgb8, 30)
 config.enable_stream(rs.stream.depth, 424, 240, rs.format.z16, 30)
 # without config it defaults to 640, 480
-profile = pipe.start(config)
+profile = pipe.start()
 
 
-# Skip 5 first frames to give the Auto-Exposure time to adjust
+# Skip 15 first frames to give the Auto-Exposure time to adjust
 for x in range(15):
   pipe.wait_for_frames()
   
 # Store next frameset for later processing:
 frameset = pipe.wait_for_frames()
 color_frame = frameset.get_color_frame()
-
-depth_frames = []
-
-for x in range(30):
-    frameset = pipe.wait_for_frames()
-    depth_frames.append(frameset.get_depth_frame())
+depth_frame = frameset.get_depth_frame()
 
 #depth_frame = frameset.get_depth_frame()
 depth_scale = profile.get_device().first_depth_sensor().get_depth_scale()
@@ -56,19 +51,13 @@ temporal = rs.temporal_filter()
 depth_to_disparity = rs.disparity_transform(True)
 disparity_to_depth = rs.disparity_transform(False)
 
-
-frame = 0
-
-for x in range(len(depth_frames)):
-    frame = depth_frames[x]
-    frame = decimation.process(frame)
-    frame = depth_to_disparity.process(frame)
-    frame = spatial.process(frame)
-    frame = temporal.process(frame)
-    frame = disparity_to_depth.process(frame)
-    frame = hole_filling.process(frame)
-
-depth_frame = frame 
+frame = depth_frame
+frame = decimation.process(frame)
+frame = depth_to_disparity.process(frame)
+frame = spatial.process(frame)
+frame = temporal.process(frame)
+frame = disparity_to_depth.process(frame)
+depth_frame = hole_filling.process(frame)
 
 # Cleanup:
 pipe.stop()
@@ -150,27 +139,45 @@ xmin_depth = int((xmin * expected + crop_start) * scale)
 ymin_depth = int((ymin * expected) * scale)
 xmax_depth = int((xmax * expected + crop_start) * scale)
 ymax_depth = int((ymax * expected) * scale)
+x_centre = int((xmax_depth - xmin_depth)/2) + xmin_depth
+y_centre = int((ymax_depth - ymin_depth)/2) + ymin_depth
+print(x_centre)
+print(y_centre)
 #xmin_depth,ymin_depth,xmax_depth,ymax_depth
 cv2.rectangle(colorized_depth, (xmin_depth, ymin_depth), 
              (xmax_depth, ymax_depth), (255, 255, 255), 2)
+
+cv2.rectangle(colorized_depth, (x_centre-2, y_centre-2), 
+             (x_centre+2, y_centre+2), (255, 255, 255), 2)
 plt.imshow(colorized_depth)
 plt.show()
 
-depth = np.asanyarray(aligned_depth_frame.get_data())
+# depth = np.asanyarray(aligned_depth_frame.get_data())
 # Crop depth data:
-depth = depth[xmin_depth:xmax_depth,ymin_depth:ymax_depth].astype(float)
+# depth = depth[xmin_depth:xmax_depth,ymin_depth:ymax_depth].astype(float)
 
 # Get data scale from the device and convert to meters
 
 
-depth = depth * depth_scale
-dist,_,_,_ = cv2.mean(depth)
+# depth = depth * depth_scale
+# dist,_,_,_ = cv2.mean(depth)
 
 #newX = xmin * (1280/expected)
 #newY = 
 
-avg_x = 0.5 * (xmin * (424) + xmax * (240))
-avg_y = 0.5 * (ymin * (424) + ymax * (240))
+
+
+depth = np.asanyarray(aligned_depth_frame.get_data())
+
+print(len(depth))
+depth = depth[x_centre-2:x_centre+2,y_centre-2:y_centre+2].astype(float)
+print(len(depth))
+
+depth = depth * depth_scale
+dist,_,_,_ = cv2.mean(depth)
+
+avg_x = 0.5 * (xmin * (width) + xmax * (height))
+avg_y = 0.5 * (ymin * (width) + ymax * (height))
 avg_z = dist
 
 
@@ -183,7 +190,11 @@ print("Pixel coord: x = {0}, y = {1}, z = {2}".format(avg_x,avg_y,avg_z))
 display = (realx, realy, realz)
 print("Detected a {0} at (x, y, z) : ({1:.3}, {2:.3}, {3:.3}).".format(className, display[0], display[1], display[2]))
 
-rate = rospy.Rate(100)
+pose_msg.position.x = display[0]
+pose_msg.position.y = display[1]
+pose_msg.position.z = display[2]
+
+rate = rospy.Rate(1)
 while not rospy.is_shutdown():
     my_pub.publish(pose_msg)
     rate.sleep()

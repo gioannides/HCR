@@ -51,6 +51,7 @@ import copy
 import moveit_commander
 import moveit_msgs.msg
 import geometry_msgs.msg
+from geometry_msgs.msg import Pose
 from math import pi
 from std_srvs.srv import Empty
 import numpy as np
@@ -63,6 +64,7 @@ class ExampleMoveItTrajectories(object):
     super(ExampleMoveItTrajectories, self).__init__()
     moveit_commander.roscpp_initialize(sys.argv)
     rospy.init_node('example_move_it_trajectories')
+    rospy.Subscriber("/beer_position", Pose, self.callback, queue_size=1)
 
     # Create the MoveItInterface necessary objects
     arm_group_name = "arm"
@@ -304,6 +306,11 @@ class ExampleMoveItTrajectories(object):
   def reach_x_y(self, x, y, angle_x, angle_y, angle_z):
     wpose = self.arm_group.get_current_pose().pose
     self.reach_position(x, y, wpose.position.z, angle_x, angle_y, angle_z)
+  
+  def callback(self, msg):
+    # self.reach_position(0.186310863495,0.0305601924658, 0.0438205093145,pi/2,0, pi/2)
+    # self.reach_named_position("home")
+    self.reach_position(msg.position.z, msg.position.x/-1, msg.position.y/-1, pi/2,0, pi/2)
 
 def main():
     example = ExampleMoveItTrajectories()
@@ -311,17 +318,19 @@ def main():
     # simulator scene
     # example.set_scene()
 
-    example.reach_named_position("home")
+    # example.reach_named_position("home")
 
-    example.reach_position(0.55,0, 0.09,pi/2,0, pi/2)
-    example.reach_gripper_position(0)
-    example.reach_position(0.62,0, 0.09,pi/2,0, pi/2)
-    example.reach_gripper_position(0.15)
-    example.move_up(0.1)
-    example.reach_x_y(0,0.62,-pi/2,-pi, 0)
-    example.tilt(-pi/3)
-    time.sleep(0.5)
-    example.tilt(-pi/3)
+    # example.reach_position(0.55,0, 0.09,pi/2,0, pi/2)
+    # example.reach_gripper_position(0)
+    # example.reach_position(0.62,0, 0.09,pi/2,0, pi/2)
+    # example.reach_gripper_position(0.15)
+    # example.move_up(0.1)
+    # example.reach_x_y(0,0.62,-pi/2,-pi, 0)
+    # example.tilt(-pi/3)
+    # time.sleep(0.5)
+    # example.tilt(-pi/3)
+
+    rospy.spin()
 
 #   rospy.loginfo("Press any key to start Named Target Vertical sub example")
 #   raw_input()
