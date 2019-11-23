@@ -314,10 +314,20 @@ class ExampleMoveItTrajectories(object):
     # self.reach_position(0.186310863495,0.0305601924658, 0.0438205093145,pi/2,0, pi/2)
     # self.reach_named_position("home")
     try:
-      self.reach_position(msg.position.z, msg.position.x/-1, msg.position.y/-1, pi/2,0, pi/2)
-      self.my_pub.publish(true)
+      # self.reach_position(msg.position.z, msg.position.x/-1, msg.position.y/-1, pi/2,0, pi/2)
+      self.reach_named_position("home")
+      reach_position(0.55,0, 0.09,pi/2,0, pi/2)
+      example.reach_gripper_position(0)
+      example.reach_position(0.62,0, 0.09,pi/2,0, pi/2)
+      example.reach_gripper_position(0.15)
+      example.move_up(0.1)
+      example.reach_x_y(0,0.62,-pi/2,-pi, 0)
+      example.tilt(-pi/3)
+      time.sleep(0.5)
+      example.tilt(-pi/3)
+      self.my_pub.publish(True)
     except:
-      self.my_pub.publish(false)
+      self.my_pub.publish(False)
 
 def main():
     example = ExampleMoveItTrajectories()
