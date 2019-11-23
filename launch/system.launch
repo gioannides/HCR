@@ -1,0 +1,26 @@
+<launch>
+    
+    <arg name="port_no" default="/dev/ttyUSB0"/>
+
+    <!-- Launch nodes -->
+
+    <!-- Start ros-kortex driver -->
+    <include file="$(find kortex_driver)/launch/kortex_driver.launch">
+        <arg name="gripper" value="robotiq_2f_85"/>
+        <arg name="default_goal_time_tolerance" value="0"/>
+    </include>
+
+    <!--include file="$(find openni_launch)/launch/openni.launch"/>
+
+    <include file="$(find cob_people_detection)/launch/cob_people_detection.launch">
+        <arg name="using_nodelets" value="true"/>
+    </include>
+ 
+    <node name="rosserial_python" pkg="rosserial_python" type="serial_node.py" _port="$(arg port_no)" output="screen"/>
+    <node name="kinect_aux" pkg="kinect_aux" type="kinect_aux_node" output="screen"/>    
+    <node name="id_verification" pkg="id_verification" type="ID_detection.py" output="screen"/>
+    <node name="nao-scripts" pkg="nao-scripts" type="nao.py" output="screen"/-->
+    <node name="obj_dt" pkg="obj_dt" type="obj_dt.py" output="screen"/>
+    <node name="kinova_nav" pkg="kinova_nav" type="navigate.py" ns="my_gen3" output="screen"/>
+
+</launch>

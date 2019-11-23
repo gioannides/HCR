@@ -52,6 +52,7 @@ import moveit_commander
 import moveit_msgs.msg
 import geometry_msgs.msg
 from geometry_msgs.msg import Pose
+from std_msgs.msg import Bool
 from math import pi
 from std_srvs.srv import Empty
 import numpy as np
@@ -65,6 +66,8 @@ class ExampleMoveItTrajectories(object):
     moveit_commander.roscpp_initialize(sys.argv)
     rospy.init_node('example_move_it_trajectories')
     rospy.Subscriber("/beer_position", Pose, self.callback, queue_size=1)
+
+    self.my_pub = rospy.Publisher('/drink_poured', Bool, queue_size=1)
 
     # Create the MoveItInterface necessary objects
     arm_group_name = "arm"
@@ -310,7 +313,11 @@ class ExampleMoveItTrajectories(object):
   def callback(self, msg):
     # self.reach_position(0.186310863495,0.0305601924658, 0.0438205093145,pi/2,0, pi/2)
     # self.reach_named_position("home")
-    self.reach_position(msg.position.z, msg.position.x/-1, msg.position.y/-1, pi/2,0, pi/2)
+    try:
+      self.reach_position(msg.position.z, msg.position.x/-1, msg.position.y/-1, pi/2,0, pi/2)
+      self.my_pub.publish(true)
+    except:
+      self.my_pub.publish(false)
 
 def main():
     example = ExampleMoveItTrajectories()
