@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os
 import rospy
-import rospkg
+
 import time
 import sys
 from std_msgs.msg import Bool,String, Float64, UInt8
@@ -13,6 +13,7 @@ class JustTouchpad(object):
         self.pub_to_screen = rospy.Publisher("/term1_displayScreenX",UInt8, queue_size=1)
         self.pub_to_arm = rospy.Publisher("/pour_drink", UInt8, queue_size=1)
         self.pub_to_kinect = rospy.Publisher("/tilt_angle",Float64, queue_size=1)
+        self.pub_to_kinect.publish(40)
 
         self.sub_customer = rospy.Subscriber("/face_detector/face_positions", FoundFace, self.callback_foundcustomer, queue_size=1)
         print("JustTouchpad INIT DONE")
@@ -21,7 +22,7 @@ class JustTouchpad(object):
             print("customer found")
             self.sub_customer.unregister()
             self.pub_customer_welcomed.publish("Welcomed")
-            self.sub_age = rospy.Subscriber("/IDimage",String, self.callback_drink_select)
+            self.sub_age = rospy.Subscriber("/above18",Bool, self.callback_drink_select)
     def callback_drink_select(self,msg):
         print("ID Found")
         self.pub_to_kinect.publish(40) # move kinect back up
@@ -54,7 +55,7 @@ class JustTouchpad(object):
             # restart process
             self.pub_to_screen.publish(4) #change later on with goodbye screen
             time.sleep(3) # wait to avoid detecting same customer
-            self.sub_customer = rospy.Subscriber("/face_detector/face_positions", FoundFace, self.callback_foundcustomer queue_size=1)
+            self.sub_customer = rospy.Subscriber("/face_detector/face_positions", FoundFace, self.callback_foundcustomer, queue_size=1)
 
 if __name__ == "__main__":
     try:

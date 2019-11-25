@@ -40,6 +40,7 @@ class NAO(object):
         # Wake up robot
         self.motionProxy.wakeUp()
         self.pub_to_kinect.publish(40)
+        self.pub_to_screen.publish(4)
 
         self.sub_customer = rospy.Subscriber("/face_detector/face_positions", FoundFace, self.callback_hello, queue_size=1)
         print("NAO INIT DONE")
@@ -88,7 +89,7 @@ class NAO(object):
 
     def callback_drink_ready(self,msg):
         self.sub_ready.unregister() # ignore other messages from arm
-        self.pub_to_screen.publish(4) # enjoy responsibly
+        self.pub_to_screen.publish(5) # drink ready
         pickup(self.tts, self.motionProxy, self.postureProxy,self.choice)
         time.sleep(3)
         print("Drink Ready please collect function called")
@@ -105,7 +106,7 @@ class NAO(object):
             self.callback_drink_select(self.over18)
         else:
             # restart process
-            self.pub_to_screen.publish(4) #change later on with goodbye screen
+            self.pub_to_screen.publish(6) #display goodbye screen
             time.sleep(3) # wait to avoid detecting same customer
             self.sub_customer = rospy.Subscriber("/face_detector/face_positions", FoundFace, self.callback_hello, queue_size=1)
 
