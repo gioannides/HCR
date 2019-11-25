@@ -25,6 +25,12 @@ class IDDetector(object):
 	#changed image to STRING PUT BACK
         self.pub_ID_image = rospy.Publisher("/above18", Bool, queue_size=1)
         self.pub_to_kinect = rospy.Publisher("/tilt_angle",Float64, queue_size=1)
+
+        # publishers for visualisation in demo
+        self.pub_white_mask = rospy.Publisher("/white_mask", Image, queue_size=1)
+        self.pub_edges = rospy.Publisher("/edges", Image, queue_size=1)
+        self.pub_cropped_ID = rospy.Publisher("/cropped_ID", Image, queue_size=1)
+        self.pub_red_mask = rospy.Publisher("/red_mask", Image, queue_size=1)
         self.cv_bridge = CvBridge()
 
         self.lower_threshold, self.upper_threshold = rospy.get_param("~lower_threshold", 50), rospy.get_param("~upper_threshold", 200)
@@ -45,7 +51,6 @@ class IDDetector(object):
         # First convert the ROS message to an OpenCV compatible image type
         img = self.cv_bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
         #print("image recieved")
-
         # white mask for ID detection
         hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV) #change colortype for openCV
         lower_white = np.array([0, 0, 0], dtype=np.uint8)
@@ -55,9 +60,14 @@ class IDDetector(object):
 
     	# Bitwise-AND mask and original image
     	res = cv2.bitwise_and(img,img, mask= mask)
+        white_mask_IMG = self.cv_bridge.cv2_to_imgmsg(res)
+        self.pub_white_mask.publish(white_mask_IMG)
+
         # You can now use any OpenCV operation you find to extract "meaning" from the image
         # Here, let's extract edges from the image using the Canny Edge detector
         edges = cv2.Canny(res, self.lower_threshold, self.upper_threshold)
+        edge_IMG = self.cv_bridge.cv2_to_imgmsg(edges)
+        self.pub_edges.publish(edge_IMG)
 
         #find the contours in the edged image, keeping only the largest ones and initialize the screen contour
         cnts=cv2.findContours(edges.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
@@ -96,6 +106,7 @@ class IDDetector(object):
 		        # Finally, publish the edge image
                 # Now, let's convert the OpenCV image back to a ROS message
                 ID_img = self.cv_bridge.cv2_to_imgmsg(out)
+                self.pub_cropped_ID.publish(ID_img)
                 # I recommend setting the timestamp consistent with that of the original image
                 # This is useful if you want to synchronise images later on
 
