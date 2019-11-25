@@ -1,7 +1,9 @@
+#!/usr/bin/env python
 import os
 import rospy
 import rospkg
 import time
+import sys
 from std_msgs.msg import Bool,String, Float64, UInt8
 from cob_perception_msgs.msg import ColorDepthImageArray as FoundFace
 
@@ -16,18 +18,21 @@ class JustTouchpad(object):
         print("JustTouchpad INIT DONE")
     def callback_foundcustomer(self,msg):
         if(len(msg.head_detections)>0):
+            print("customer found")
             self.sub_customer.unregister()
             self.pub_customer_welcomed.publish("Welcomed")
             self.sub_age = rospy.Subscriber("/IDimage",String, self.callback_drink_select)
     def callback_drink_select(self,msg):
+        print("ID Found")
         self.pub_to_kinect.publish(40) # move kinect back up
         self.sub_age.unregister() # stop looking for age
         print("Drink Select Called")
         self.pub_to_screen.publish(1) # select drink screen
-        self.sub_selected = rospy.Subscriber("/term1_buttonPressed",UInt8, self.sendarm)
+        self.sub_selected = rospy.Subscriber("/term1_buttonPressed",UInt8, self.callback_sendarm)
     def callback_sendarm(self,msg):
         self.sub_selected.unregister() # ignore new button pressed
         self.pub_to_arm.publish(msg) # tell arm to start pouring
+        print("Sent To Arm")
         self.pub_to_screen.publish(2)
         self.sub_ready = rospy.Subscriber("/drink_poured", Bool, self.callback_drink_ready)
     def callback_drink_ready(self,msg):
@@ -43,12 +48,13 @@ class JustTouchpad(object):
         self.sub_selected.unregister()
         if(msg.data==3):
             # other drink selected, go back to selection screen
+            time.sleep(1)
             self.callback_drink_select("")
         else:
             # restart process
             self.pub_to_screen.publish(4) #change later on with goodbye screen
             time.sleep(3) # wait to avoid detecting same customer
-            self.sub_customer = rospy.Subscriber("/face_detector/face_positions", FoundFace, self.callback_hello, queue_size=1)
+            self.sub_customer = rospy.Subscriber("/face_detector/face_positions", FoundFace, self.callback_foundcustomer queue_size=1)
 
 if __name__ == "__main__":
     try:

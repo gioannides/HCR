@@ -23,7 +23,7 @@ CARD_MIN_AREA= 25000
 class IDDetector(object):
     def __init__(self):
 	#changed image to STRING PUT BACK
-        self.pub_ID_image = rospy.Publisher("/IDimage", String, queue_size=1)
+        self.pub_ID_image = rospy.Publisher("/above18", Bool, queue_size=1)
         self.pub_to_kinect = rospy.Publisher("/tilt_angle",Float64, queue_size=1)
         self.cv_bridge = CvBridge()
 
@@ -102,7 +102,7 @@ class IDDetector(object):
                 ID_img.header.stamp = msg.header.stamp
                 #Publishing string MUST CHANGE
                 try:
-                    self.pub_ID_image.publish("ID DETECTED")
+                    self.pub_ID_image.publish(True)
                 except rospy.ROSException as e:
                     if str(e) == "publish() to a closed topic":
                         print("See ya")

@@ -56,17 +56,18 @@ class NAO(object):
         self.pub_to_kinect.publish(40) # move kinect back up
         self.sub_age.unregister() # stop looking for age
         print("Drink Select Called")
+        self.over18=msg
         self.pub_to_screen.publish(1) # select drink screen
         drink_select(self.tts,self.motionProxy,self.postureProxy,msg) # move Nao to point at touchpad
         print("Drink Select Done")
         self.sub_selected = rospy.Subscriber("/term1_buttonPressed",UInt8, self.callback_entertain)
 
     def callback_entertain(self,msg):
-        if(msg==1):
+        if(msg.data==1):
             self.choice="Stella Artois"
-        elif(msg==2):
+        elif(msg.data==2):
             self.choice="Heineken"
-        elif(msg==3):
+        elif(msg.data==3):
             self.choice="Guiness"
         else:
             self.choice="The Non Alcoholic Option"
@@ -99,8 +100,9 @@ class NAO(object):
         print(msg)
         self.sub_selected.unregister()
         if(msg.data==3):
+            time.sleep(1)
             # other drink selected, go back to selection screen
-            self.callback_drink_select("")
+            self.callback_drink_select(self.over18)
         else:
             # restart process
             self.pub_to_screen.publish(4) #change later on with goodbye screen
