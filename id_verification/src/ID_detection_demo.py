@@ -82,8 +82,8 @@ class IDDetector(object):
             approx = cv2.approxPolyDP(c,0.02 * peri, True)
             #print("size= {}".format(size))
             #if our approximated contour has four points, then we can assume that we have found our ID
-            if len(approx) == 4 and size > 400:
-                self.sub.unregister()
+            if len(approx) == 4 and size > 10000:
+                #self.sub.unregister()
                 screenCnt = approx
                 print("found card")
                 #print("screenCnt= {}".format(screenCnt))
