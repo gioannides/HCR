@@ -28,6 +28,7 @@ class IDDetector(object):
 
         # publishers for visualisation in demo
         self.pub_white_mask = rospy.Publisher("/white_mask", Image, queue_size=1)
+        self.pub_red_mask = rospy.Publisher("/red_mask", Image, queue_size=1)
         self.pub_edges = rospy.Publisher("/edges", Image, queue_size=1)
         self.pub_cropped_ID = rospy.Publisher("/cropped_ID", Image, queue_size=1)
         self.pub_red_mask = rospy.Publisher("/red_mask", Image, queue_size=1)
@@ -101,7 +102,17 @@ class IDDetector(object):
                 # (topy,topx) = (np.min(y), np.min(x))
                 # (bottomy, bottomx) = (np.max(y),np.max(x))
                 # out= img[topy:bottomy+1, topx:bottomx+1]
-                out = four_point_transform(img, screenCnt.reshape(4, 2))
+                ID_crop = four_point_transform(img, screenCnt.reshape(4, 2))
+                lower_red = np.array([0, 0, 0], dtype=np.uint8)
+            	upper_red = np.array([0,0,255], dtype=np.uint8)
+        	    # Threshold the HSV image to get only blue colors
+                mask_red = cv2.inRange(hsv, lower_red, upper_red)
+
+            	# Bitwise-AND mask and original image
+            	res_red = cv2.bitwise_and(ID_crop,ID_crop, mask= mask_red)
+
+                red_mask_IMG = self.cv_bridge.cv2_to_imgmsg(res_red)
+                self.pub_red_mask.publish(red_mask_IMG)
                 # cv2.drawContours(img, [screenCnt], -1, (0,255,0),2)
 		        # Finally, publish the edge image
                 # Now, let's convert the OpenCV image back to a ROS message
