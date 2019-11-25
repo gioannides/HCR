@@ -1,0 +1,4 @@
+<launch>
+    <node pkg="nao_scripts" type="nao.py" name="nao_scripts"/>
+</launch>
+ 
