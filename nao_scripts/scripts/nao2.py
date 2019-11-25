@@ -1,19 +1,10 @@
-#!/usr/bin/env python
-
-import os
-import rospy
-import rospkg
-
-
 import argparse
 import math
 import time
-from naoqi import ALProxy
 import motion
-import sys
-sys.dont_write_bytecode = True
+from naoqi import ALProxy
 
-def hello(tts, motionProxy, postureProxy):
+def hello_ID(tts, motionProxy, postureProxy):
 
     postureProxy.goToPosture("StandInit",0.5)
 
@@ -22,24 +13,28 @@ def hello(tts, motionProxy, postureProxy):
     
     # Joint matrix for the hello movement
     JointNamesL = ["LShoulderPitch", "LShoulderRoll", "LElbowYaw", "LElbowRoll", "LWristYaw", "LHand"]
+    JointNamesL2 = ["LShoulderPitch", "LShoulderRoll", "LElbowYaw", "LElbowRoll", "LWristYaw", "LHand", "HeadYaw", "HeadPitch"]
+    
     # waving right
     Arm1 = [-70,  40, 0, -35, 20, 50]
     Arm1 = [ x * motion.TO_RAD for x in Arm1]
-
+    
     # waving left
     Arm2 = [-70,  40, 0, -75, -20, 50]
     Arm2 = [ x * motion.TO_RAD for x in Arm2]
-    tts.post.say("Hello, do you want a beer?")
+    
+    Arm3 = [-70,  40, 0, -35, 20, 50, -20, -10]
+    Arm3 = [ x * motion.TO_RAD for x in Arm3]
+    tts.post.say("Hello, I am BEER BOT, if you would like a beer,")
     
     pFractionMaxSpeed = 0.35
+    pFractionMaxSpeed1 = 0.2
     
-    motionProxy.angleInterpolationWithSpeed(JointNamesL, Arm1, pFractionMaxSpeed)
+    motionProxy.post.angleInterpolationWithSpeed(JointNamesL, Arm1, pFractionMaxSpeed)
     motionProxy.angleInterpolationWithSpeed(JointNamesL, Arm2, pFractionMaxSpeed)
     motionProxy.angleInterpolationWithSpeed(JointNamesL, Arm1, pFractionMaxSpeed)
     motionProxy.angleInterpolationWithSpeed(JointNamesL, Arm2, pFractionMaxSpeed)
-    motionProxy.angleInterpolationWithSpeed(JointNamesL, Arm1, pFractionMaxSpeed)
-    
-def getID(tts, motionProxy, postureProxy):
+    motionProxy.angleInterpolationWithSpeed(JointNamesL2, Arm3, pFractionMaxSpeed1)
     
     # Joint matrix for the ID movement
     ID = ["LShoulderPitch", "LShoulderRoll", "LElbowYaw", "LElbowRoll", "LWristYaw", "LHand","RShoulderPitch", "RShoulderRoll", "RElbowYaw", "RElbowRoll", "RWristYaw", "RHand", "HeadYaw", "HeadPitch"]
@@ -63,7 +58,7 @@ def getID(tts, motionProxy, postureProxy):
     motionProxy.angleInterpolationWithSpeed(ID, ID_position2, pFractionMaxSpeed)
     
     
-def drink_select(tts, motionProxy, postureProxy):
+def drink_select(tts, motionProxy, postureProxy, above18):
     # Joint matrix for the touchpad movement
     Touchpad = ["LShoulderPitch", "LShoulderRoll", "LElbowYaw", "LElbowRoll", "LWristYaw", "LHand","RShoulderPitch", "RShoulderRoll", "RElbowYaw", "RElbowRoll", "RWristYaw", "RHand", "HeadYaw", "HeadPitch"]
     
@@ -83,29 +78,41 @@ def drink_select(tts, motionProxy, postureProxy):
     Touchpad_position4 = [70,  50, 0, 0, -50, 50, 30, 0, 80, 20, 50, 50, 20,-20]
     Touchpad_position4 = [ x * motion.TO_RAD for x in Touchpad_position4]
     
+    # bring back left arm
+    Touchpad_position5 = [70,  0, -60, -70, -70, 50, 30, 0, 80, 20, 50, 50, 20,-20]
+    Touchpad_position5 = [ x * motion.TO_RAD for x in Touchpad_position5]
+    
     pFractionMaxSpeed = 0.3
     pFractionMaxSpeed2 = 0.15
-   
+    pFractionMaxSpeed3 = 0.25
     tts.post.say("Please select the one you want on the touch pad")
     
     motionProxy.angleInterpolationWithSpeed(Touchpad, Touchpad_position, pFractionMaxSpeed)
     time.sleep(1.5)
+    if above18:
+        tts.post.say("We have a choice of Guiness, Corona, Kopperberg and an non alcoholic beer!")
     
-    tts.post.say("We have a choice of Guiness, Corona,")
+        motionProxy.post.angleInterpolationWithSpeed(Touchpad, Touchpad_position2, pFractionMaxSpeed2)
+        motionProxy.angleInterpolationWithSpeed(Touchpad, Touchpad_position3, pFractionMaxSpeed2)
+        motionProxy.angleInterpolationWithSpeed(Touchpad, Touchpad_position4, pFractionMaxSpeed2)
     
-    motionProxy.post.angleInterpolationWithSpeed(Touchpad, Touchpad_position2, pFractionMaxSpeed2)
-    motionProxy.angleInterpolationWithSpeed(Touchpad, Touchpad_position3, pFractionMaxSpeed2)
-    motionProxy.angleInterpolationWithSpeed(Touchpad, Touchpad_position4, pFractionMaxSpeed2)
+        #tts.post.say(")
     
-    tts.post.say("Kopperberg and an non alcoholic beer!")
+        motionProxy.angleInterpolationWithSpeed(Touchpad, Touchpad_position3, pFractionMaxSpeed2)
+    else:
+        tts.post.say("You are under 18,")
+        
+        motionProxy.post.angleInterpolationWithSpeed(Touchpad, Touchpad_position2, pFractionMaxSpeed2)
+        motionProxy.angleInterpolationWithSpeed(Touchpad, Touchpad_position5, pFractionMaxSpeed3)
+        
+        tts.post.say("but don't worry, we have an non alcoholic beer for you!")
     
-    motionProxy.angleInterpolationWithSpeed(Touchpad, Touchpad_position3, pFractionMaxSpeed2)
-
+    
 def dance(tts, motionProxy, postureProxy):
     # Stand to start the dance with the correct balance/posture
     postureProxy.goToPosture("StandInit", 0.5)
     
-    tts.post.say("While you are waiting for your beer, look at my dance skills!")
+    tts.post.say("Look at my dance skills!")
     
     time.sleep(2.0)
     # chacha moves
@@ -263,27 +270,55 @@ def joke2(tts, motionProxy, postureProxy):
     motionProxy.angleInterpolationWithSpeed(Joke2R, Joke2_position4R, pFractionMaxSpeed1)
     
     
+def choice(tts, motionProxy, postureProxy, drink):
+    
+    sentence = "You have chosen " + drink
+    Head = ["HeadYaw", "HeadPitch"]
+    
+    tts.say(sentence)
+    tts.post.say("While you are waiting for your drink, let me entertain you!")
+    
+    Head_position1 = [0,-20]
+    Head_position1 = [ x * motion.TO_RAD for x in Head_position1]
+    pFractionMaxSpeed = 0.1
+    motionProxy.post.angleInterpolationWithSpeed(Head, Head_position1, pFractionMaxSpeed)
 
+def pickup(tts, motionProxy, postureProxy, drink):
+    ID = ["LShoulderPitch", "LShoulderRoll", "LElbowYaw", "LElbowRoll", "LWristYaw", "LHand","RShoulderPitch", "RShoulderRoll", "RElbowYaw", "RElbowRoll", "RWristYaw", "RHand", "HeadYaw", "HeadPitch"]
+    
+    sentence = "Your " + drink + " is ready!"
+    tts.say(sentence)
+    tts.post.say("You can pick it up from the bar!")
+    
+    # pointing at the ID reader
+    ID_position = [30,  -20, 0, -60, 0, 50,70,-50, 0, 0, 50, 50,-50,10]
+    ID_position = [ x * motion.TO_RAD for x in ID_position]
+    
+    pFractionMaxSpeed = 0.3
+    
+    motionProxy.post.angleInterpolationWithSpeed(ID, ID_position, pFractionMaxSpeed)
     
 def main(ip, port):
     
     robotIP = "192.168.43.70"
     PORT = 9559
+    above18 = False
+    drink = "Corona"
     tts    = ALProxy("ALTextToSpeech", robotIP, PORT)
     motionProxy = ALProxy("ALMotion", robotIP, PORT)
     motionProxy.setStiffnesses("Body", 1.0)
     postureProxy = ALProxy("ALRobotPosture", robotIP, PORT)
 
     postureProxy.goToPosture("StandInit",0.5)
-    rospy.init_node('NAO',anonymous=True)
+
     # Wake up robot
     motionProxy.wakeUp()
-    hello(tts, motionProxy,postureProxy)
+    #hello_ID(tts, motionProxy,postureProxy)
     
-    #getID(tts, motionProxy, postureProxy)
+    #drink_select(tts, motionProxy, postureProxy, above18)
     
-    #drink_select(tts, motionProxy, postureProxy)
-    
+    #choice(tts, motionProxy, postureProxy, drink)
+    pickup(tts, motionProxy, postureProxy, drink)
     #dance(tts, motionProxy, postureProxy)
    
     #joke1(tts, motionProxy, postureProxy)

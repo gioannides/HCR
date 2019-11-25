@@ -11,7 +11,7 @@ from cob_perception_msgs.msg import ColorDepthImageArray as FoundFace
 from naoqi import ALProxy
 import sys
 sys.path.append("/home/human/catkin_ws/src/HCR/nao_scripts/scripts")
-from nao2 import hello,getID,drink_select,dance,joke,joke1,joke2
+from nao2 import hello_ID,drink_select,choice,dance,joke,joke1,joke2,pickup
 
 sys.dont_write_bytecode = True
 
@@ -39,36 +39,43 @@ class NAO(object):
         self.postureProxy.goToPosture("StandInit",0.5)
         # Wake up robot
         self.motionProxy.wakeUp()
-	self.pub_to_kinect.publish(40)
+        self.pub_to_kinect.publish(40)
 
         self.sub_customer = rospy.Subscriber("/face_detector/face_positions", FoundFace, self.callback_hello, queue_size=1)
-        print("INIT DONE")
+        print("NAO INIT DONE")
 
     def callback_hello(self,msg):
         #print("HELLO CALLED")
         if(len(msg.head_detections) > 0 ):
             self.sub_customer.unregister() # stop looking for new people
-            hello(self.tts,self.motionProxy,self.postureProxy) # nao says hello
-            #time.sleep(3)
-            getID(self.tts,self.motionProxy,self.postureProxy) # nao asks for ID
+            hello_ID(self.tts,self.motionProxy,self.postureProxy) # nao says hello
             self.pub_customer_welcomed.publish("Welcomed") # start ID scan
-	    self.sub_age = rospy.Subscriber("/IDimage",String, self.callback_drink_select) # wait until ID confirmed
+            self.sub_age = rospy.Subscriber("/above18",Bool, self.callback_drink_select) # wait until ID confirmed
 
     def callback_drink_select(self,msg):
         self.pub_to_kinect.publish(40) # move kinect back up
         self.sub_age.unregister() # stop looking for age
         print("Drink Select Called")
         self.pub_to_screen.publish(1) # select drink screen
-        drink_select(self.tts,self.motionProxy,self.postureProxy) # move Nao to point at touchpad
+        drink_select(self.tts,self.motionProxy,self.postureProxy,msg) # move Nao to point at touchpad
         print("Drink Select Done")
         self.sub_selected = rospy.Subscriber("/term1_buttonPressed",UInt8, self.callback_entertain)
 
     def callback_entertain(self,msg):
+        if(msg==1):
+            self.choice="Stella Artois"
+        elif(msg==2):
+            self.choice="Heineken"
+        elif(msg==3):
+            self.choice="Guiness"
+        else:
+            self.choice="The Non Alcoholic Option"
         self.sub_selected.unregister() # ignore new button pressed
         self.pub_to_arm.publish(msg) # tell arm to start pouring
         self.sub_ready = rospy.Subscriber("/drink_poured", Bool, self.callback_drink_ready) # wait until arm is done
         self.pub_to_screen.publish(2)
-        print("Entertain Called")
+        choice(self.tts, self.motionProxy, self.postureProxy,self.choice) #drink selection
+        #print("Entertain Called")
         #dance(self.tts, self.motionProxy, self.postureProxy)
         #time.sleep(3)
         #joke(self.tts, self.motionProxy, self.postureProxy)
@@ -81,6 +88,7 @@ class NAO(object):
     def callback_drink_ready(self,msg):
         self.sub_ready.unregister() # ignore other messages from arm
         self.pub_to_screen.publish(4) # enjoy responsibly
+        pickup(self.tts, self.motionProxy, self.postureProxy,self.choice)
         time.sleep(3)
         print("Drink Ready please collect function called")
         self.pub_to_screen.publish(3) # other drink?
@@ -100,7 +108,7 @@ class NAO(object):
             self.sub_customer = rospy.Subscriber("/face_detector/face_positions", FoundFace, self.callback_hello, queue_size=1)
 
 if __name__ == "__main__":
-    
+
     try:
         rospy.init_node("NAO",  argv=sys.argv)
         sys.argv = rospy.myargv(argv=sys.argv)
