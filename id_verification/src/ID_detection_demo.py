@@ -27,6 +27,7 @@ class IDDetector(object):
         self.pub_to_kinect = rospy.Publisher("/tilt_angle",Float64, queue_size=1)
 
         # publishers for visualisation in demo
+        self.pub_rectified_img = rospy.Publisher("/rect_img", Image, queue_size=1)
         self.pub_white_mask = rospy.Publisher("/white_mask", Image, queue_size=1)
         self.pub_red_mask = rospy.Publisher("/red_mask", Image, queue_size=1)
         self.pub_edges = rospy.Publisher("/edges", Image, queue_size=1)
@@ -51,6 +52,14 @@ class IDDetector(object):
     def callback(self, msg):
         # First convert the ROS message to an OpenCV compatible image type
         img = self.cv_bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
+        # adjust brightness and saturation of original image
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        img[...,1] = img[...,1]*1.6
+        img[...,2] = img[...,2]*0.9
+        img = cv2.cvtColor(img, cv2.COLOR_HSV2BGR)
+
+        IMG = self.cv_bridge.cv2_to_imgmsg(img)
+        self.pub_rectified_img.publish(IMG)
         #print("image recieved")
         # white mask for ID detection
         hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV) #change colortype for openCV
@@ -83,7 +92,7 @@ class IDDetector(object):
             approx = cv2.approxPolyDP(c,0.02 * peri, True)
             #print("size= {}".format(size))
             #if our approximated contour has four points, then we can assume that we have found our ID
-            if len(approx) == 4 and size > 10000:
+            if len(approx) == 4 and size > 5000:
                 #self.sub.unregister()
                 screenCnt = approx
                 print("found card")
@@ -103,11 +112,19 @@ class IDDetector(object):
                 # (bottomy, bottomx) = (np.max(y),np.max(x))
                 # out= img[topy:bottomy+1, topx:bottomx+1]
                 ID_crop = four_point_transform(img, screenCnt.reshape(4, 2))
-                lower_red = np.array([0, 0, 0], dtype=np.uint8)
-            	upper_red = np.array([0,0,255], dtype=np.uint8)
-        	    # Threshold the HSV image to get only blue colors
-                mask_red = cv2.inRange(hsv, lower_red, upper_red)
 
+                hsv_red = cv2.cvtColor(ID_crop, cv2.COLOR_BGR2HSV) #change colortype for openCV
+
+                lower_red = np.array([0, 100, 10], dtype=np.uint8)
+            	upper_red = np.array([10,255,255], dtype=np.uint8)
+        	    # Threshold the HSV image to get only blue colors
+                mask_red_0 = cv2.inRange(hsv_red, lower_red, upper_red)
+
+                lower_red = np.array([160, 100, 100], dtype=np.uint8)
+            	upper_red = np.array([179,255,255], dtype=np.uint8)
+                mask_red_1 = cv2.inRange(hsv_red, lower_red, upper_red)
+                # join my masks
+                mask_red = mask_red_0+mask_red_1
             	# Bitwise-AND mask and original image
             	res_red = cv2.bitwise_and(ID_crop,ID_crop, mask= mask_red)
 
@@ -116,10 +133,28 @@ class IDDetector(object):
                 # cv2.drawContours(img, [screenCnt], -1, (0,255,0),2)
 		        # Finally, publish the edge image
                 # Now, let's convert the OpenCV image back to a ROS message
-                ID_img = self.cv_bridge.cv2_to_imgmsg(out)
-                self.pub_cropped_ID.publish(ID_img)
                 # I recommend setting the timestamp consistent with that of the original image
                 # This is useful if you want to synchronise images later on
+
+                edges_red = cv2.Canny(res_red,self.lower_threshold, self.upper_threshold)
+                cnts_red=cv2.findContours(edges_red.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+                cnts_red=imutils.grab_contours(cnts_red)
+                cnts_red=sorted(cnts_red,key = cv2.contourArea, reverse = True)[:5]
+                for c in cnts_red:
+                    size= cv2.contourArea(c)
+                    peri= cv2.arcLength(c, True)
+                    approx = cv2.approxPolyDP(c,0.02 * peri, True)
+                    print("size of red= {}".format(size))
+                    print("number of sides = {}".format(len(approx)))
+                    if(size > 50 and len(approx)<20):
+                        print("Under 18")
+
+                screenCnt=[]
+                cv2.drawContours(ID_crop, cnts_red, -1, (0,0,255),2)
+                ID_img = self.cv_bridge.cv2_to_imgmsg(ID_crop)
+                self.pub_cropped_ID.publish(ID_img)
+
+                out= np.zeros_like(img)
 
                 ID_img.header.stamp = msg.header.stamp
                 #Publishing string MUST CHANGE
