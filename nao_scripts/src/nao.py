@@ -58,35 +58,49 @@ class NAO(object):
         self.sub_age.unregister() # stop looking for age
         print("Drink Select Called")
         self.over18=msg
-        self.pub_to_screen.publish(1) # select drink screen
-        self.sub_selected = rospy.Subscriber("/term1_buttonPressed",UInt8, self.callback_entertain)
+        if msg.data==True
+            self.pub_to_screen.publish(1) # select drink screen
+        else:
+            self.pub_to_screen.publish(7) # select drink screen for <18
+
+        self.sub_selected = rospy.Subscriber("/term1_buttonPressed",UInt8, self.callback_entertain, callback_args = self.over18)
         drink_select(self.tts,self.motionProxy,self.postureProxy,msg) # move Nao to point at touchpad
         print("Drink Select Done")
-        
 
-    def callback_entertain(self,msg):
+
+    def callback_entertain(self,msg, over18):
         self.sub_selected.unregister() # ignore new button pressed
-        if(msg.data==1):
-            self.choice="Stella Artois"
-        elif(msg.data==2):
-            self.choice="Heineken"
-        elif(msg.data==3):
-            self.choice="Guiness"
+        if (!over18 & msg.data==4): #if <18 and don't want non-alcoholic drink
+            self.pub_to_screen.publish(6) #publish goodbye
+            time.sleep(3) # wait to avoid detecting same customer
+            self.sub_customer = rospy.Subscriber("/face_detector/face_positions", FoundFace, self.callback_hello, queue_size=1)
         else:
-            self.choice="The Non Alcoholic Option"
-        self.pub_to_arm.publish(msg) # tell arm to start pouring
-        self.sub_ready = rospy.Subscriber("/drink_poured", Bool, self.callback_drink_ready) # wait until arm is done
-        self.pub_to_screen.publish(2)
-        choice(self.tts, self.motionProxy, self.postureProxy,self.choice) #drink selection
-        #print("Entertain Called")
-        #dance(self.tts, self.motionProxy, self.postureProxy)
-        #time.sleep(3)
-        #joke(self.tts, self.motionProxy, self.postureProxy)
-        #time.sleep(3)
-        #joke1(self.tts, self.motionProxy, self.postureProxy)
-        #time.sleep(3)
-        joke2(self.tts, self.motionProxy, self.postureProxy)
-        print("Entertain Done")
+            if over18:
+                if(msg.data==1):
+                    self.choice="Stella Artois"
+                elif(msg.data==2):
+                    self.choice="Heineken"
+                elif(msg.data==3):
+                    self.choice="Guiness"
+                else:
+                    self.choice="The Non Alcoholic Option"
+            else:
+                msg.data = 4        #translate the 'yes' into the correct drink
+                self.choice="The Non Alcoholic Option"
+
+            self.pub_to_arm.publish(msg) # tell arm to start pouring
+            self.sub_ready = rospy.Subscriber("/drink_poured", Bool, self.callback_drink_ready) # wait until arm is done
+            self.pub_to_screen.publish(2)
+            choice(self.tts, self.motionProxy, self.postureProxy,self.choice) #drink selection
+            #print("Entertain Called")
+            #dance(self.tts, self.motionProxy, self.postureProxy)
+            #time.sleep(3)
+            #joke(self.tts, self.motionProxy, self.postureProxy)
+            #time.sleep(3)
+            #joke1(self.tts, self.motionProxy, self.postureProxy)
+            #time.sleep(3)
+            joke2(self.tts, self.motionProxy, self.postureProxy)
+            print("Entertain Done")
 
     def callback_drink_ready(self,msg):
         self.sub_ready.unregister() # ignore other messages from arm
