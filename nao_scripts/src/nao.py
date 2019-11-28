@@ -59,11 +59,13 @@ class NAO(object):
         print("Drink Select Called")
         self.over18=msg
         self.pub_to_screen.publish(1) # select drink screen
+        self.sub_selected = rospy.Subscriber("/term1_buttonPressed",UInt8, self.callback_entertain)
         drink_select(self.tts,self.motionProxy,self.postureProxy,msg) # move Nao to point at touchpad
         print("Drink Select Done")
-        self.sub_selected = rospy.Subscriber("/term1_buttonPressed",UInt8, self.callback_entertain)
+        
 
     def callback_entertain(self,msg):
+        self.sub_selected.unregister() # ignore new button pressed
         if(msg.data==1):
             self.choice="Stella Artois"
         elif(msg.data==2):
@@ -72,7 +74,6 @@ class NAO(object):
             self.choice="Guiness"
         else:
             self.choice="The Non Alcoholic Option"
-        self.sub_selected.unregister() # ignore new button pressed
         self.pub_to_arm.publish(msg) # tell arm to start pouring
         self.sub_ready = rospy.Subscriber("/drink_poured", Bool, self.callback_drink_ready) # wait until arm is done
         self.pub_to_screen.publish(2)
@@ -99,12 +100,13 @@ class NAO(object):
     def callback_anotherDrink(self,msg):
         print("customer responded")
         print(msg)
-        self.sub_selected.unregister()
         if(msg.data==3):
+            self.sub_selected.unregister()
             time.sleep(1)
             # other drink selected, go back to selection screen
             self.callback_drink_select(self.over18)
-        else:
+        elif(msg.data==4):
+            self.sub_selected.unregister()
             # restart process
             self.pub_to_screen.publish(6) #display goodbye screen
             time.sleep(3) # wait to avoid detecting same customer

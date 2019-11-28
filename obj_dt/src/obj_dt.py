@@ -209,7 +209,8 @@ class obj_dt(object):
 
 def main():
     example = obj_dt()
-    rospy.spin()
+    example.callback(1)
+    # rospy.spin()
 
 if __name__ == '__main__':
   main()

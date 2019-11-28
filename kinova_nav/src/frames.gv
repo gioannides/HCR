@@ -1,0 +1,28 @@
+digraph G {
+"bracelet_link" -> "end_effector_link"[label="Broadcaster: /robot_state_publisher\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1574803811.217 sec old)\nBuffer length: 0.000 sec\n"];
+"spherical_wrist_2_link" -> "bracelet_link"[label="Broadcaster: /robot_state_publisher\nAverage rate: 10.204 Hz\nMost recent transform: 1574803811.141 ( 0.076 sec old)\nBuffer length: 4.900 sec\n"];
+"end_effector_link" -> "gripper_base_link"[label="Broadcaster: /robot_state_publisher\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1574803811.217 sec old)\nBuffer length: 0.000 sec\n"];
+"gripper_finger1_knuckle_link" -> "gripper_finger1_finger_link"[label="Broadcaster: /robot_state_publisher\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1574803811.217 sec old)\nBuffer length: 0.000 sec\n"];
+"gripper_base_link" -> "gripper_finger1_knuckle_link"[label="Broadcaster: /robot_state_publisher\nAverage rate: 10.204 Hz\nMost recent transform: 1574803811.141 ( 0.076 sec old)\nBuffer length: 4.900 sec\n"];
+"gripper_finger2_knuckle_link" -> "gripper_finger2_finger_link"[label="Broadcaster: /robot_state_publisher\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1574803811.217 sec old)\nBuffer length: 0.000 sec\n"];
+"gripper_base_link" -> "gripper_finger2_knuckle_link"[label="Broadcaster: /robot_state_publisher\nAverage rate: 10.204 Hz\nMost recent transform: 1574803811.141 ( 0.076 sec old)\nBuffer length: 4.900 sec\n"];
+"gripper_center" -> "100"[label="Broadcaster: /static_transform_publisher_1574803765212847011\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1574803811.217 sec old)\nBuffer length: 0.000 sec\n"];
+"gripper_finger1_inner_knuckle_link" -> "gripper_finger1_finger_tip_link"[label="Broadcaster: /robot_state_publisher\nAverage rate: 10.204 Hz\nMost recent transform: 1574803811.141 ( 0.076 sec old)\nBuffer length: 4.900 sec\n"];
+"gripper_base_link" -> "gripper_finger1_inner_knuckle_link"[label="Broadcaster: /robot_state_publisher\nAverage rate: 10.204 Hz\nMost recent transform: 1574803811.141 ( 0.076 sec old)\nBuffer length: 4.900 sec\n"];
+"gripper_finger2_inner_knuckle_link" -> "gripper_finger2_finger_tip_link"[label="Broadcaster: /robot_state_publisher\nAverage rate: 10.204 Hz\nMost recent transform: 1574803811.141 ( 0.076 sec old)\nBuffer length: 4.900 sec\n"];
+"gripper_base_link" -> "gripper_finger2_inner_knuckle_link"[label="Broadcaster: /robot_state_publisher\nAverage rate: 10.204 Hz\nMost recent transform: 1574803811.141 ( 0.076 sec old)\nBuffer length: 4.900 sec\n"];
+"base_link" -> "shoulder_link"[label="Broadcaster: /robot_state_publisher\nAverage rate: 10.204 Hz\nMost recent transform: 1574803811.141 ( 0.076 sec old)\nBuffer length: 4.900 sec\n"];
+"shoulder_link" -> "half_arm_1_link"[label="Broadcaster: /robot_state_publisher\nAverage rate: 10.204 Hz\nMost recent transform: 1574803811.141 ( 0.076 sec old)\nBuffer length: 4.900 sec\n"];
+"half_arm_1_link" -> "half_arm_2_link"[label="Broadcaster: /robot_state_publisher\nAverage rate: 10.204 Hz\nMost recent transform: 1574803811.141 ( 0.076 sec old)\nBuffer length: 4.900 sec\n"];
+"half_arm_2_link" -> "forearm_link"[label="Broadcaster: /robot_state_publisher\nAverage rate: 10.204 Hz\nMost recent transform: 1574803811.141 ( 0.076 sec old)\nBuffer length: 4.900 sec\n"];
+"forearm_link" -> "spherical_wrist_1_link"[label="Broadcaster: /robot_state_publisher\nAverage rate: 10.204 Hz\nMost recent transform: 1574803811.141 ( 0.076 sec old)\nBuffer length: 4.900 sec\n"];
+"spherical_wrist_1_link" -> "spherical_wrist_2_link"[label="Broadcaster: /robot_state_publisher\nAverage rate: 10.204 Hz\nMost recent transform: 1574803811.141 ( 0.076 sec old)\nBuffer length: 4.900 sec\n"];
+edge [style=invis];
+ subgraph cluster_legend { style=bold; color=black; label ="view_frames Result";
+"Recorded at time: 1574803811.217"[ shape=plaintext ] ;
+ }->"gripper_center";
+edge [style=invis];
+ subgraph cluster_legend { style=bold; color=black; label ="view_frames Result";
+"Recorded at time: 1574803811.217"[ shape=plaintext ] ;
+ }->"base_link";
+}

@@ -1,0 +1,5 @@
+  <launch>
+    <!-- <node pkg="kinova_nav" type="tf_broadcaster.py" name="fixed_tf_broadcaster"/> -->
+    <!-- <node pkg="kinova_nav" type="navigate.py" name="example_move_it_trajectories"/> -->
+    <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="0 0.12 0 0 0 0 1 end_effector_link gripper_center 100" />
+  </launch>
