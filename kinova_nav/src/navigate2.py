@@ -73,7 +73,7 @@ class KinovaNav(object):
     rospy.loginfo("Initializing node in namespace " + rospy.get_namespace())
 
   # turn gripper in degrees
-  def turn_gripper(self, angle, clockwise = true):
+  def turn_gripper(self, angle, clockwise = True):
     arm_group = self.arm_group
 
     self.arm_group.set_goal_joint_tolerance(0.001)
@@ -126,7 +126,7 @@ class KinovaNav(object):
     return False
     ## END_SUB_TUTORIAL
 
-  def add_collision_box(name, x, y, z, size, timeout):
+  def add_collision_box(self,name, x, y, z, size = (1, 1, 1), timeout = 5):
     box_pose = geometry_msgs.msg.PoseStamped()
     box_pose.header.frame_id = self.robot.get_planning_frame()
     box_name = name
@@ -162,15 +162,16 @@ class KinovaNav(object):
 
     return self.wait_for_state_update(bottle_name,box_is_attached=True, box_is_known=False, timeout=timeout) and self.wait_for_state_update(bottle_name+'_base',box_is_attached=True, box_is_known=False, timeout=timeout)
  
-  def add_bottle(self, bottle_name, x, y, stimeout=4):
+  def add_bottle(self, bottle_name, x, y, timeout=4):
 
     ## The the z postion is constant - on the table
+    box_pose = geometry_msgs.msg.PoseStamped()
     box_pose.header.frame_id = self.robot.get_planning_frame()
     box_name = bottle_name
-    box_pose.pose.position.x = 0.85
-    box_pose.pose.position.y = 0
-    box_pose.pose.position.z = 0.135/2 #0.5cm below base
-    self.scene.add_cylinder(box_name, box_pose, radius = 0.0275, height = 0.135 - 0.005)
+    box_pose.pose.position.x = x
+    box_pose.pose.position.y = y
+    box_pose.pose.position.z = 0.135/2 - 0.005 #0.5cm below base
+    self.scene.add_cylinder(box_name, box_pose, radius = 0.0275, height = 0.135)
 
     box_pose2 = geometry_msgs.msg.PoseStamped()
     box_pose2.header.frame_id = self.robot.get_planning_frame()
@@ -215,6 +216,24 @@ class KinovaNav(object):
     gripper_max_absolute_pos = gripper_joint.max_bound()
     gripper_joint.move(relative_position * gripper_max_absolute_pos, True)
 
+  def reach_cartesian_pose(self, pose, tolerance, constraints):
+    arm_group = self.arm_group
+    
+    # Set the tolerance
+    arm_group.set_goal_position_tolerance(tolerance)
+
+    # Set the trajectory constraint if one is specified
+    if constraints is not None:
+      #import pdb; pdb.set_trace()
+      arm_group.set_path_constraints(constraints)
+
+    # Get the current Cartesian Position
+    arm_group.set_pose_target(pose)
+
+    # Plan and execute
+    rospy.loginfo("Planning and going to the Cartesian Pose")
+    arm_group.go(wait=True)
+
   def reach_position(self, x, y, z, angle_x, angle_y, angle_z):
     quaternion = tf.transformations.quaternion_from_euler(angle_x,angle_y, angle_z)
 
@@ -248,7 +267,7 @@ class KinovaNav(object):
 
     self.reach_cartesian_pose(pose=wpose, tolerance=0.01, constraints=None)
 
-  def open_bottle(self, radians):
+  def open_bottle(self):
     pose = self.scene.get_object_poses(['opener_tip'])['opener_tip']
     self.reach_position(pose.position.x,pose.position.y-0.002, pose.position.z-0.175, pi/2,0, -pi/2)
 
@@ -267,11 +286,11 @@ class KinovaNav(object):
 
   def move_to_section(self, table_num):
     # go to the correct section
-    if (msg.data == '1'):
+    if (table_num == '1'):
       self.reach_named_position("home")
-    elif (msg.data == '2'):
+    elif (table_num == '2'):
       self.reach_named_position("home")
-    elif (msg.data == '3'):
+    elif (table_num == '3'):
       self.reach_named_position("home")
     else:
       self.reach_named_position("home")
@@ -296,29 +315,31 @@ class KinovaNav(object):
   
   def callback_beer_position(self, msg):
     print("navigating to position " + str(msg.position))
-    try:
-      # Add bottle and navigate to it
-      self.add_bottle("corona1", msg.position.x,msg.position.y)
-      self.go_position(msg.position.x, msg.position.y, msg.position.z, pi/2)
+    # Add bottle and navigate to it
+    self.add_bottle("corona1", msg.position.x,msg.position.y)
+    self.go_position(msg.position.x, msg.position.y, msg.position.z, pi/2)
 
-      # Pick it up and open it
-      self.open_bottle()
+    # Pick it up and open it
+    self.open_bottle()
 
-      self.drink_poured_pub.publish(True)
-    except:
-      self.drink_poured_pub.publish(False)
+    self.drink_poured_pub.publish(True)
+    # try:
+      
+    # except:
+    #   self.drink_poured_pub.publish(False)
 
 def main():
     example = KinovaNav()
 
+    # example.add_bottle("corona1", 0.85,0)
     # Uncomment next block if running in integrate system
-    example.callback_pour(1)
+    example.callback_pour(UInt8(1))
     pose_msg = Pose()
     pose_msg.position.x = 0.85
     pose_msg.position.y = 0
     example.callback_beer_position(pose_msg)
 
-    rospy.spin()
+    # rospy.spin()
 
 def pose_to_q(msg):
   """Convert a C{geometry_msgs/Pose} into position/quaternion np arrays
@@ -412,24 +433,6 @@ if __name__ == '__main__':
   #   ## **Note:** The robot's current joint state must be within some tolerance of the
   #   ## first waypoint in the `RobotTrajectory`_ or ``execute()`` will fail
   #   ## END_SUB_TUTORIAL
-
-  # def reach_cartesian_pose(self, pose, tolerance, constraints):
-  #   arm_group = self.arm_group
-    
-  #   # Set the tolerance
-  #   arm_group.set_goal_position_tolerance(tolerance)
-
-  #   # Set the trajectory constraint if one is specified
-  #   if constraints is not None:
-  #     #import pdb; pdb.set_trace()
-  #     arm_group.set_path_constraints(constraints)
-
-  #   # Get the current Cartesian Position
-  #   arm_group.set_pose_target(pose)
-
-  #   # Plan and execute
-  #   rospy.loginfo("Planning and going to the Cartesian Pose")
-  #   arm_group.go(wait=True)
 
   # Get actual pose
 #     actual_pose = example.get_cartesian_pose()
