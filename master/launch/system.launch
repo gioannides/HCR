@@ -9,7 +9,9 @@
         <arg name="gripper" value="robotiq_2f_85"/>
         <arg name="ip_address" value="192.168.43.108"/>
         <arg name="default_goal_time_tolerance" value="0"/>
-    </include> --> -->
+    </include>
+
+    <node name="kinova_nav" pkg="kinova_nav" type="navigate.py" ns="my_gen3" output="screen"/> -->
 
     <include file="$(find gen3_robotiq_2f_85_move_it_config)/launch/demo.launch">
     </include>
@@ -29,7 +31,6 @@
     <node pkg="nao_scripts" type="nao.py" name="nao_scripts"/>
     <node name="obj_dt" pkg="obj_dt" type="tmp_fixed_msg.py" output="screen"/>
     <!-- <node name="obj_dt" pkg="obj_dt" type="obj_dt.py" output="screen"/> -->
-    <!-- <node name="kinova_nav" pkg="kinova_nav" type="navigate.py" ns="my_gen3" output="screen"/> -->
 
 </launch>
  
