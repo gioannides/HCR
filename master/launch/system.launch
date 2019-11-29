@@ -15,11 +15,11 @@
     </include>
     <node name="kinova_nav" pkg="kinova_nav" type="navigate.py" output="screen"/>
 
-    <include file="$(find openni_launch)/launch/openni.launch"/>
+    <!-- <include file="$(find openni_launch)/launch/openni.launch"/> -->
 
-    <include file="$(find cob_people_detection)/ros/launch/people_detection.launch">
+    <!-- <include file="$(find cob_people_detection)/ros/launch/people_detection.launch">
         <arg name="using_nodelets" value="true"/>
-    </include> 
+    </include>  -->
  
     <node name="rosserial_python" pkg="rosserial_python" type="serial_node.py" output="screen">
      <param name="_port" value="$(arg port)"/>
@@ -27,6 +27,7 @@
     <node name="kinect_aux" pkg="kinect_aux" type="kinect_aux_node" output="screen"/>
     <node name="id_verification" pkg="id_verification" type="ID_detection.py" output="screen"/>
     <node pkg="nao_scripts" type="nao.py" name="nao_scripts"/>
+    <node name="obj_dt" pkg="obj_dt" type="tmp_fixed_msg.py" output="screen"/>
     <!-- <node name="obj_dt" pkg="obj_dt" type="obj_dt.py" output="screen"/> -->
     <!-- <node name="kinova_nav" pkg="kinova_nav" type="navigate.py" ns="my_gen3" output="screen"/> -->
 

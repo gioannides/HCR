@@ -65,8 +65,6 @@ class ExampleMoveItTrajectories(object):
     super(ExampleMoveItTrajectories, self).__init__()
     moveit_commander.roscpp_initialize(sys.argv)
     rospy.init_node('example_move_it_trajectories')
-    self.pour_drink_sub = rospy.Subscriber("/pour_drink", UInt8, self.callback_pour, queue_size=1)
-    self.beer_position_sub = rospy.Subscriber("/beer_position", Pose, self.callback_beer_position, queue_size=1)
     self.listener = tf.TransformListener()
 
     self.drink_poured_pub = rospy.Publisher('/drink_poured', Bool, queue_size=1)
@@ -77,7 +75,11 @@ class ExampleMoveItTrajectories(object):
     self.robot = moveit_commander.RobotCommander("robot_description")
     self.scene = moveit_commander.PlanningSceneInterface(ns=rospy.get_namespace())
     self.arm_group = moveit_commander.MoveGroupCommander(arm_group_name, ns=rospy.get_namespace())
-    self.arm_group.set_planning_time(10)
+    self.arm_group.set_planning_time(15)
+    self.arm_group
+    self.arm_group.set_goal_tolerance(0.005)
+    self.arm_group.set_goal_orientation_tolerance(0.001)
+    self.arm_group.set_num_planning_attempts(5)
     # self.arm_group.set_end_effector_link("gripper_base_link")
     self.display_trajectory_publisher = rospy.Publisher(rospy.get_namespace() + 'move_group/display_planned_path',
                                                    moveit_msgs.msg.DisplayTrajectory,
@@ -106,7 +108,21 @@ class ExampleMoveItTrajectories(object):
 
     rospy.loginfo("Initializing node in namespace " + rospy.get_namespace())
 
-  def wait_for_state_update(self, box_name, box_is_known=False, box_is_attached=False, timeout=7):
+  def open_bottle(self):
+    arm_group = self.arm_group
+
+    # Set the goal joint tolerance
+    self.arm_group.set_goal_joint_tolerance(0.001)
+
+    # Set the joint target configuration
+    joint_positions = arm_group.get_current_joint_values()
+    joint_positions[6] -= 7.0/180.0*pi
+    arm_group.set_joint_value_target(joint_positions)
+    
+    # Plan and execute in one command
+    arm_group.go(wait=True)
+
+  def wait_for_state_update(self, box_name, box_is_known=False, box_is_attached=False, timeout=4):
     # Copy class variables to local variables to make the web tutorials more clear.
     # In practice, you should use the class variables directly unless you have a good
     # reason not to.
@@ -145,7 +161,7 @@ class ExampleMoveItTrajectories(object):
     return False
     ## END_SUB_TUTORIAL
 
-  def set_scene(self, timeout=7):
+  def set_scene(self, timeout=4):
 
     ## BEGIN_SUB_TUTORIAL add_box
     ##
@@ -173,13 +189,29 @@ class ExampleMoveItTrajectories(object):
     box_pose = geometry_msgs.msg.PoseStamped()
     box_pose.header.frame_id = self.robot.get_planning_frame()
     box_name = "table"
-    box_pose.pose.position.x = -6.91
+    box_pose.pose.position.x = -0.91
     box_pose.pose.position.y = 0
     box_pose.pose.position.z = -0.0325
-    self.scene.add_box(box_name, box_pose, size=(14, 14, 0.025))
+    self.scene.add_box(box_name, box_pose, size=(2, 2, 0.025))
     return self.wait_for_state_update(box_name, box_is_known=True, timeout=timeout)
 
-  def add_clamp(self, timeout=7):
+  def add_table2(self, timeout=15):
+
+    ## BEGIN_SUB_TUTORIAL add_box
+    ##
+    ## Adding Objects to the Planning Scene
+    ## ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ## First, we will create a box in the planning scene at the location of the left finger:
+    box_pose = geometry_msgs.msg.PoseStamped()
+    box_pose.header.frame_id = self.robot.get_planning_frame()
+    box_name = "table2"
+    box_pose.pose.position.x = 1.3
+    box_pose.pose.position.y = 0
+    box_pose.pose.position.z = -0.505
+    self.scene.add_box(box_name, box_pose, size=(1, 1, 1))
+    return self.wait_for_state_update(box_name, box_is_known=True, timeout=timeout)
+
+  def add_clamp(self, timeout=4):
 
     ## BEGIN_SUB_TUTORIAL add_box
     ##
@@ -195,7 +227,7 @@ class ExampleMoveItTrajectories(object):
     self.scene.add_box(box_name, box_pose, size=(0.14, 0.054, 0.20))
     return self.wait_for_state_update(box_name, box_is_known=True, timeout=timeout)
 
-  def add_base(self, timeout=7):
+  def add_base(self, timeout=4):
 
     ## BEGIN_SUB_TUTORIAL add_box
     ##
@@ -211,7 +243,7 @@ class ExampleMoveItTrajectories(object):
     self.scene.add_box(box_name, box_pose, size=(0.18, 0.20, 0.02))
     return self.wait_for_state_update(box_name, box_is_known=True, timeout=timeout)
 
-  def add_opener(self, timeout=7):
+  def add_opener(self, timeout=4):
 
     ## BEGIN_SUB_TUTORIAL add_box
     ##
@@ -227,7 +259,7 @@ class ExampleMoveItTrajectories(object):
     self.scene.add_box(box_name, box_pose, size=(0.01, 0.10, 0.02))
     return self.wait_for_state_update(box_name, box_is_known=True, timeout=timeout)
 
-  def add_opener_tip(self, timeout=7):
+  def add_opener_tip(self, timeout=4):
 
     ## BEGIN_SUB_TUTORIAL add_box
     ##
@@ -243,7 +275,7 @@ class ExampleMoveItTrajectories(object):
     self.scene.add_box(box_name, box_pose, size=(0.01, 0.03, 0.005))
     return self.wait_for_state_update(box_name, box_is_known=True, timeout=timeout)
 
-  def attach_bottle(self, timeout=7):
+  def attach_bottle(self, timeout=4):
     # Copy class variables to local variables to make the web tutorials more clear.
     # In practice, you should use the class variables directly unless you have a good
     # reason not to.
@@ -263,15 +295,16 @@ class ExampleMoveItTrajectories(object):
     ## planning scene to ignore collisions between those links and the box. For the Panda
     ## robot, we set ``grasping_group = 'hand'``. If you are using a different robot,
     ## you should change this value to the name of your end effector group name.
-    touch_links = self.robot.get_link_names(group=self.gripper_group)
-    scene.attach_box(self.eef_link, 'bottle_base', touch_links=touch_links)
+    touch_links = self.robot.get_link_names(group='gripper')
+    self.scene.attach_box("gripper_base_link", 'bottle_top', touch_links=touch_links)
+    self.scene.attach_box("gripper_base_link", 'bottle_base', touch_links=touch_links)
     # scene.attach_box(self.eef_link, 'bottle_top', touch_links=touch_links)
     ## END_SUB_TUTORIAL
 
     # We wait for the planning scene to update.
-    return self.wait_for_state_update(box_is_attached=True, box_is_known=False, timeout=timeout)
+    return self.wait_for_state_update('bottle_top',box_is_attached=True, box_is_known=False, timeout=timeout) and self.wait_for_state_update('bottle_base',box_is_attached=True, box_is_known=False, timeout=timeout)
 
-  def add_bottle(self, x, y, timeout=7):
+  def add_bottle(self, timeout=4):
 
     ## BEGIN_SUB_TUTORIAL add_box
     ##
@@ -281,21 +314,21 @@ class ExampleMoveItTrajectories(object):
     box_pose = geometry_msgs.msg.PoseStamped()
     box_pose.header.frame_id = self.robot.get_planning_frame()
     box_name = "bottle_base"
-    box_pose.pose.position.x = x
-    box_pose.pose.position.y = y
-    box_pose.pose.position.z = 0.065-0.02
-    self.scene.add_box(box_name, box_pose, size=(0.025, 0.025, 0.13))
+    box_pose.pose.position.x = 0.85
+    box_pose.pose.position.y = 0
+    box_pose.pose.position.z = 0.135/2 #0.5cm below base
+    self.scene.add_cylinder(box_name, box_pose, radius = 0.0275, height = 0.135 - 0.005)
 
     box_pose2 = geometry_msgs.msg.PoseStamped()
     box_pose2.header.frame_id = self.robot.get_planning_frame()
     box_name2 = "bottle_top"
     box_pose2.pose.position.x = box_pose.pose.position.x
     box_pose2.pose.position.y = box_pose.pose.position.y
-    box_pose2.pose.position.z = 0.13 - 0.02 + 0.105 / 2
-    self.scene.add_box(box_name2, box_pose2, size=(0.025, 0.025, 0.105))
+    box_pose2.pose.position.z = 0.135 - 0.005 + 0.107 / 2
+    self.scene.add_cylinder(box_name2, box_pose2, radius =  0.0175, height = 0.107)
     return self.wait_for_state_update(box_name, box_is_known=True, timeout=timeout) and self.wait_for_state_update(box_name2, box_is_known=True, timeout=timeout)
 
-  def detach_box(self, timeout=7):
+  def detach_box(self, timeout=4):
     # Copy class variables to local variables to make the web tutorials more clear.
     # In practice, you should use the class variables directly unless you have a good
     # reason not to.
@@ -314,23 +347,20 @@ class ExampleMoveItTrajectories(object):
     # We wait for the planning scene to update.
     return self.wait_for_state_update(box_is_known=True, box_is_attached=False, timeout=timeout)
 
-  def remove_box(self, box_name):
-    # Copy class variables to local variables to make the web tutorials more clear.
-    # In practice, you should use the class variables directly unless you have a good
-    # reason not to.
+  def remove_object(self, obj_name):
 
     ## BEGIN_SUB_TUTORIAL remove_object
     ##
     ## Removing Objects from the Planning Scene
     ## ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     ## We can remove the box from the world.
-    self.scene.remove_world_object(box_name)
+    self.scene.remove_world_object(obj_name)
 
     ## **Note:** The object must be detached before we can remove it from the world
     ## END_SUB_TUTORIAL
 
     # We wait for the planning scene to update.
-    return self.wait_for_state_update(box_is_attached=False, box_is_known=False, timeout=timeout)
+    return self.wait_for_state_update(obj_name,box_is_attached=False, box_is_known=False, timeout=10)
 
   def reach_named_position(self, target):
     arm_group = self.arm_group
@@ -405,8 +435,22 @@ class ExampleMoveItTrajectories(object):
     self.reach_position(0.62, 0, 0.09, pi/2, 0, pi/2)
     self.move_up(0.1)
 
-  def move_up(self, z):
+  def move_z(self, z):
     wpose = self.arm_group.get_current_pose().pose
+    wpose.position.z += z
+
+    self.reach_cartesian_pose(pose=wpose, tolerance=0.01, constraints=None)
+
+  def move_y(self, y):
+    wpose = self.arm_group.get_current_pose().pose
+    wpose.position.y += y
+
+    self.reach_cartesian_pose(pose=wpose, tolerance=0.01, constraints=None)
+
+  def move_x_y_z(self, x=0,y=0,z=0):
+    wpose = self.arm_group.get_current_pose().pose
+    wpose.position.x += x
+    wpose.position.y += y
     wpose.position.z += z
 
     self.reach_cartesian_pose(pose=wpose, tolerance=0.01, constraints=None)
@@ -449,30 +493,8 @@ class ExampleMoveItTrajectories(object):
       # self.tilt(-pi/3)
       # time.sleep(0.5)
       # self.tilt(-pi/3)
-      # self.add_bottle(msg.x, msg.y)
       # self.reach_position(msg.position.x, msg.position.y, msg.position.z,pi/2,0, pi/2)
-
-      # self.reach_gripper_position(0)
-
-      # pose = self.scene.get_object_poses(['bottle_base'])['bottle_base']
-      # self.reach_position(pose.position.x,pose.position.y, pose.position.z+0.3, pi/2,0, -pi/2)
-      # self.reach_position(pose.position.x,pose.position.y, pose.position.z+0.1, pi/2,0, -pi/2)
-
-
-      # self.reach_gripper_position(0.5)
-      # self.attach_bottle()
-
-      # self.reach_position(pose.position.x,pose.position.y, pose.position.z+0.3, pi/2,0, -pi/2)
-
-      # self.reach_named_position("home")
-
-      # pose = self.scene.get_object_poses(['opener_tip'])['opener_tip']
-      # self.reach_position(pose.position.x,pose.position.y, pose.position.z-0.4, pi/2,0, -pi/2)
-      # self.reach_position(pose.position.x,pose.position.y, pose.position.z-0.1, pi/2,0, -pi/2)
       self.reach_position(0.55,0, 0.09,pi/2,0, pi/2)
-      time.sleep(2)
-      # self.reach_position(0.55,0, 0.09,pi/2,0, pi/2)
-      
       self.drink_poured_pub.publish(True)
     except:
       self.drink_poured_pub.publish(False)
@@ -502,22 +524,45 @@ class ExampleMoveItTrajectories(object):
 
 def main():
     example = ExampleMoveItTrajectories()
-    # example.move_to_table(1)
-    # simulator scene
-    # example.set_scene()
 
-    # example.reach_position(0.157,0.157, -0.103,-pi/2,0, pi/2)
+    example.add_table()
 
-    # example.reach_position(0.3,0, 0,pi,0, pi/2)
-
-    #example.add_table()
+    example.add_table2()
     example.add_clamp()
     example.add_base()
     example.add_opener()
     example.add_opener_tip()
-    # example.add_bottle()
+    example.add_bottle()
 
+    example.reach_named_position("home")
+    example.reach_gripper_position(0)
+
+    pose = example.scene.get_object_poses(['bottle_base'])['bottle_base']
+    example.reach_position(pose.position.x,pose.position.y, pose.position.z+0.01, pi/2,0, pi/2)
+    # example.reach_position(0.85,0,0.063+0.01, pi/2,0, pi/2)
+
+
+    example.attach_bottle()
+    example.reach_gripper_position(0.5)
+
+    pose = example.scene.get_object_poses(['opener_tip'])['opener_tip']
+    example.reach_position(pose.position.x,pose.position.y-0.002, pose.position.z-0.175, pi/2,0, -pi/2)
+    example.remove_object('opener_tip')
+    example.remove_object('opener')
+    example.remove_object('clamp')
+    example.move_x_y_z(y=0.005,z=0.01)
+    example.open_bottle()
+    example.move_z(-0.08)
+
+    example.reach_position(pose.position.x+0.1,pose.position.y, pose.position.z-0.175, pi/2,0, -pi/2)
+    example.add_clamp()
+    example.add_opener()
+    example.add_opener_tip()
     
+
+    # example.reach_gripper_position(0.40)
+    # example.reach_position(pose.position.x,pose.position.y, pose.position.z+0.4,-pi/2,0, pi/4)
+    # example.reach_position(pose.position.x,pose.position.y, pose.position.z+,pi/2,0, pi/2)
 
     # example.reach_position(-0.3,-0.3, 0.4,-pi/2,0, 3*pi/4)
     # example.attach_bottle()
@@ -536,7 +581,7 @@ def main():
     # time.sleep(0.5)
     # example.tilt(-pi/3)
 
-    rospy.spin()
+    # rospy.spin()
 
 #   rospy.loginfo("Press any key to start Named Target Vertical sub example")
 #   raw_input()
