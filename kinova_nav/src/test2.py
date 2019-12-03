@@ -54,7 +54,7 @@ class KinovaNav(object):
         self.base.ExecuteActionFromReference(action_handle)
         time.sleep(10) # Leave time to action to complete
 
-    def example_angular_action_movement(self):
+    def move_to_joints(self, a_0,a_1,a_2,a_3,a_4,a_5,a_6):
         
         print("Starting angular action movement ...")
         action = Base_pb2.Action()
@@ -63,11 +63,13 @@ class KinovaNav(object):
 
         actuator_count = self.base.GetActuatorCount()
 
+        joint_angles = {0:a_0,1:a_1,2:a_2,3:a_3,4:a_4,5:a_5,6:a_6}
+
         # Place arm straight up
         for joint_id in range(actuator_count.count):
             joint_angle = action.reach_joint_angles.joint_angles.joint_angles.add()
             joint_angle.joint_identifier = joint_id
-            joint_angle.value = 0
+            joint_angle.value = joint_angles[joint_id]
 
         print("Executing action")
         self.base.ExecuteAction(action)
@@ -215,9 +217,35 @@ class KinovaNav(object):
         self.base.SendGripperCommand(gripper_command)
         time.sleep(5)
 
+    def section_position(self):
+        x = 0.514
+        z = 0.193
+        camera_offset = 0.04
+        if (self.table_num == 1):
+            y = -0.21 
+        elif (self.table_num == 2):
+            y = -0.07
+        elif (self.table_num == 3):
+            y = 0.07
+        else:
+            y = 0.21
+
+        v1 = Pose()
+        v1.position.x = x
+        v1.position.y = y - camera_offset
+        v1.position.z = z
+
+        return v1
+
+    def move_to_section(self):
+        # go to the correct section
+        section_pose = self.section_position()
+        print(section_pose)
+        self.go_position(section_pose.position.x, section_pose.position.y, section_pose.position.z, 90, timeout=10)
+
     def convert_camera(self, msg):
 
-        self.current_position()
+        current_position = self.section_position()
         
         v1 = Pose()
         v1.position.x = msg.position.z
@@ -230,16 +258,16 @@ class KinovaNav(object):
         v2.position.z = -0.07
         
         pose_msg = Pose()
-        pose_msg.position.x = v1.position.x + v2.position.x + self.current_position.position.x
-        pose_msg.position.y = v1.position.y + v2.position.y + self.current_position.position.y
-        pose_msg.position.z = v1.position.z + v2.position.z + self.current_position.position.z
+        pose_msg.position.x = v1.position.x + v2.position.x + current_position.position.x
+        pose_msg.position.y = v1.position.y + v2.position.y + current_position.position.y
+        pose_msg.position.z = v1.position.z + v2.position.z + current_position.position.z
         print("translated_bottle x: {}".format(pose_msg.position.x))
         print("translated_bottle y: {}".format(pose_msg.position.y))
         print("translated_bottle z: {}".format(pose_msg.position.z))
 
         return pose_msg
 
-    def open_bottle(self):
+    def get_bottle_height(self):
         if (self.table_num == '1'): # hop house
             height = 0.2
         elif (self.table_num == '2'): # san miguel
@@ -249,12 +277,49 @@ class KinovaNav(object):
         else:                       # becks
             height = 0.215
 
-        # san miguel open position
-        self.reach_position(0.153, 0.164, -0.105+0.225-height, -90, -180, 90, timeout=20)
+        return height
 
-        self.reach_position(0.153, 0.164+0.013, -0.105+0.007+0.225-height, -90, -180, 90, timeout=20)
-        self.reach_position(0.153, 0.164+0.013, -0.105+0.007+0.225-height, -90, -173, 90, timeout=20)
-        self.reach_position(0.153, 0.164+0.013, -0.105+0.007-0.05+0.225-height, -90, -173, 90, timeout=20)
+    def open_bottle(self):
+        height = self.get_bottle_height()
+
+        reference = 0.215
+
+
+        self.move_to_joints(331.74,108.09,201.49,306.35,143.18,115.53,96.57)
+
+        # reach open position
+        self.reach_position(0.162, 0.164, -0.09+reference-height, -90, -180, 93, timeout=10)
+
+        self.reach_position(0.162, 0.164+0.010, -0.09+0.005+reference-height, -90, -180, 93, timeout=10)
+        self.reach_position(0.162, 0.164+0.010, -0.09+0.003+reference-height, -90, -178, 93, timeout=10)
+        self.reach_gripper_position(1)
+        self.reach_position(0.162, 0.164+0.010, -0.09+0.003-0.05+reference-height, -90, -175, 93, timeout=10)
+        self.reach_position(0.162+0.10, 0.164+0.010, -0.09+0.003-0.05+reference-height, -90, -175, 93, timeout=10)
+
+        self.example_move_to_home_position()
+
+    def opening_demo(self):
+        # go towards the bottle
+        self.go_position(pose_msg.position.x - 0.1 + 0.02, pose_msg.position.y, 0.09, 90, timeout=10)
+        self.reach_gripper_position(0)
+        self.go_position(pose_msg.position.x + 0.02, pose_msg.position.y, 0.09, 90, timeout=10)
+        self.reach_gripper_position(1)
+        self.go_position(pose_msg.position.x + 0.02, pose_msg.position.y, 0.40, 90, timeout=5)
+
+        # self.move_to_section()
+
+        #  pouring
+        self.example_move_to_home_position()
+        # self.reach_gripper_position(1)
+        # self.reach_position(0.333, -0.471, 0.434, 90,0,35.1, timeout=10)
+        # self.reach_position(-0.044, -0.575, 0.434, -90,180,175.5, timeout=10)
+        # self.reach_position(-0.467, -0.338, 0.434, -90,180,125.7, timeout=10)
+        # self.reach_position(-0.583, -0.416, 0.15, -90,180,90, timeout=10)
+        self.move_to_joints(88.38,93.75,252.25,268.96,267.93,17.62,87.91)
+        self.reach_position(-0.578, -0.416, 0.068, -90,180,90, timeout=10)
+        self.reach_gripper_position(0)
+        self.reach_position(-0.578+0.1, -0.416, 0.068, -90,180,90, timeout=10)
+        self.example_move_to_home_position()
 
     def callback_beer_position(self, msg):
 
@@ -268,29 +333,56 @@ class KinovaNav(object):
            
 
             # go towards the bottle
-            self.go_position(pose_msg.position.x - 0.1 + 0.02, pose_msg.position.y, 0.09, 90, timeout=20)
+            self.go_position(pose_msg.position.x - 0.1 + 0.02, pose_msg.position.y, 0.09, 90, timeout=10)
             self.reach_gripper_position(0)
-            self.go_position(pose_msg.position.x + 0.02, pose_msg.position.y, 0.09, 90, timeout=15)
+            self.go_position(pose_msg.position.x + 0.02, pose_msg.position.y, 0.09, 90, timeout=10)
             self.reach_gripper_position(1)
-            self.go_position(pose_msg.position.x + 0.02, pose_msg.position.y, 0.19, 90, timeout=5)
+            self.go_position(pose_msg.position.x + 0.02, pose_msg.position.y, 0.40, 90, timeout=5)
 
-            self.move_to_section()
+            # self.move_to_section()
 
-            # go towards the opener
-            self.reach_position(0.314, 0.148, -0.145, -90, -180, 0, timeout=20)
-            self.reach_position(0.199, 0.156, -0.132, -90, -180, 90, timeout=20)
+            #  pouring
+            self.example_move_to_home_position()
 
-            # # san miguel open position
             self.open_bottle()
+
+            self.example_move_to_home_position()
+
+            self.pour_bottle()
+            # self.reach_gripper_position(1)
+            # self.reach_position(0.333, -0.471, 0.434, 90,0,35.1, timeout=10)
+            # self.reach_position(-0.044, -0.575, 0.434, -90,180,175.5, timeout=10)
+            # self.reach_position(-0.467, -0.338, 0.434, -90,180,125.7, timeout=10)
+            # self.reach_position(-0.583, -0.416, 0.15, -90,180,90, timeout=10)
+            # self.move_to_joints(88.38,93.75,252.25,268.96,267.93,17.62,87.91)
+            # self.reach_position(-0.578, -0.416, 0.068, -90,180,90, timeout=10)
+            # self.reach_gripper_position(0)
+            # self.reach_position(-0.578+0.1, -0.416, 0.068, -90,180,90, timeout=10)
+            # self.example_move_to_home_position()
+            # self.reach_position(-0.583, -0.416, 0.17, -90,180,90, timeout=10)
+            # self.reach_position(-0.583, -0.416, 0.17, -90,-107.5,90, timeout=20)
+            # self.reach_position(-0.583, -0.38, 0.17, -90,-95,90, timeout=10)
+            # self.reach_position(-0.583, -0.36, 0.17, -90,-90,90, timeout=10)
+            # self.reach_position(-0.583, -0.416, 0.17, -90,180,90, timeout=20)
+
+
+            # self.example_move_to_home_position()
+
+            # # go towards the opener
+            # self.reach_position(0.314, 0.148, -0.145, -90, -180, 0, timeout=20)
+            # self.reach_position(0.199, 0.156, -0.132, -90, -180, 90, timeout=20)
+
+            # # # san miguel open position
+            # self.open_bottle()
 
             # # move to bottle opening
             # self.example_move_to_home_position()
             # self.reach_position(0.333, -0.471, 0.434, 90,0,35.1, timeout=10)
             # self.reach_position(-0.044, -0.575, 0.434, -90,180,175.5, timeout=10)
             # self.reach_position(-0.467, -0.338, 0.434, -90,180,125.7, timeout=10)
-            # self.reach_position(-0.575, -0.001, 0.434, -90,180,90, timeout=10)
-            # self.reach_position(-0.575, -0.001, 0.07, -90,180,90, timeout=10)
-            # self.reach_gripper_position(0)
+            # # self.reach_position(-0.575, -0.001, 0.434, -90,180,90, timeout=10)
+            # # self.reach_position(-0.575, -0.001, 0.07, -90,180,90, timeout=10)
+            # # self.reach_gripper_position(0)
 
 
         # self.move_by_x_y_z(z=-0.1)
@@ -310,17 +402,16 @@ class KinovaNav(object):
     # except:
     #  self.drink_poured_pub.publish(False)
 
-    def move_to_section(self):
-    # go to the correct section
-        camera_offset = 0.04
-        if (self.table_num == '1'):
-            self.go_position(0.514, -0.21 - camera_offset, 0.193, 90, timeout=10)
-        elif (self.table_num == '2'):
-            self.go_position(0.514, -0.07 - camera_offset, 0.193, 90, timeout=10)
-        elif (self.table_num == '3'):
-            self.go_position(0.514, 0.07 - camera_offset, 0.193, 90, timeout=10)
-        else:
-            self.go_position(0.514, 0.21 - camera_offset, 0.193, 90, timeout=10)
+    def pour_bottle(self):
+        height = self.get_bottle_height()
+        reference = 0.245
+        self.move_to_joints(88.38,93.75,252.25,268.96,267.93,17.62,87.91)
+        self.reach_position(-0.583, -0.416+reference-height, 0.17, -90,180,90, timeout=10)
+        self.reach_position(-0.583, -0.41+reference-height, 0.17, -90,-115,90, timeout=20)
+        self.reach_position(-0.583, -0.38+reference-height, 0.17, -90,-95,90, timeout=5)
+        self.reach_position(-0.583, -0.36+reference-height, 0.17, -90,-90,90, timeout=5)
+        self.reach_position(-0.583, -0.35+reference-height, 0.17, -90,-88,90, timeout=10)
+        self.reach_position(-0.583, -0.416+reference-height, 0.17, -90,180,90, timeout=20)
 
 
     def callback_pour(self, msg):
@@ -331,14 +422,94 @@ class KinovaNav(object):
         with utilities.DeviceConnection.createTcpConnection(self.args) as router:
             # Create required services
             self.base = BaseClient(router)
-            self.example_move_to_home_position()
-
-            # go to bottle position
-            
-            self.current_position = v1
             self.table_num = msg.data
-            self.move_to_section()
+            # go towards the opener
+            self.example_move_to_home_position()
+            # self.open_bottle()
+            # self.reach_position(0.314, 0.148, -0.145, -90, -180, 0, timeout=20)
+            # self.move_to_joints(331.74,108.09,201.49,306.35,143.18,115.53,96.57)
+            # self.reach_position(0.199, 0.156, -0.132, -90, -180, 90, timeout=20)
+            # self.open_bottle()
+            # self.example_move_to_home_position()
+            # self.reach_gripper_position(0)
+            # self.go_position(0.752, 0.089, 0.09, 90, timeout=15)
+            # self.reach_gripper_position(1)
+            # self.example_move_to_home_position()
+
             
+
+            self.move_to_section()
+
+            # self.pour_bottle()
+
+            # if (self.table_num == '1'): # hop house
+            #     height = 0.2
+            # elif (self.table_num == '2'): # san miguel
+            #     height = 0.225
+            # elif (self.table_num == '3'): # birra moretti
+            #     height = 0.22
+            # else:                       # becks
+            #     height = 0.215
+
+            # reference = 0.215
+
+            # self.example_move_to_home_position()
+
+            # self.example_angular_action_movement()
+
+
+            # self.example_move_to_home_position()
+
+            # self.reach_gripper_position(0)
+            # self.go_position(0.752, 0.089, 0.09, 90, timeout=15)
+            # self.reach_gripper_position(1)
+
+            # self.example_move_to_home_position()
+
+
+            # # move to bottle opening
+            # self.example_move_to_home_position()
+            # self.reach_position(0.333, -0.471, 0.434, 90,0,35.1, timeout=10)
+            # self.reach_position(-0.044, -0.575, 0.434, -90,180,175.5, timeout=10)
+            # self.reach_position(-0.467, -0.338, 0.434, -90,180,125.7, timeout=10)
+
+            
+
+            
+            # self.example_move_to_home_position()
+
+            #  bottle opening
+            # self.example_move_to_home_position()
+            # self.reach_position(0.333, -0.471, 0.434, 90,0,35.1, timeout=10)
+            # self.reach_position(-0.044, -0.575, 0.434, -90,180,175.5, timeout=10)
+            # self.reach_position(-0.467, -0.338, 0.434, -90,180,125.7, timeout=10)
+
+            # self.reach_position(0.314, 0.148, -0.145, -90, -180, 0, timeout=20)
+            # self.reach_position(0.199, 0.156, -0.132, -90, -180, 90, timeout=20)
+
+            # go towards the opener
+            # self.reach_position(0.314, 0.148, -0.145, -90, -180, 0, timeout=20)
+            # self.reach_position(0.199, 0.156, -0.132, -90, -180, 90, timeout=20)
+            # self.open_bottle()
+
+
+            #  pouring
+            # self.example_move_to_home_position()
+            # self.reach_gripper_position(1)
+            # self.reach_position(0.333, -0.471, 0.434, 90,0,35.1, timeout=10)
+            # self.reach_position(-0.044, -0.575, 0.434, -90,180,175.5, timeout=10)
+            # self.reach_position(-0.467, -0.338, 0.434, -90,180,125.7, timeout=10)
+            # self.reach_position(-0.583, -0.416, 0.15, -90,180,90, timeout=10)
+
+
+
+            # self.reach_position(0.752, 0.089, 0.184, 90,-75,90, timeout=10)
+            # self.reach_position(0.752, 0.089, 0.184, 90,-85,90, timeout=15)
+            # self.reach_position(0.752, 0.079, 0.184, 90,-85,90, timeout=10)
+            # self.reach_position(0.752, 0.079, 0.184, 90,-90,90, timeout=10)
+            # self.reach_position(0.752, 0.065, 0.184, 90,-90,90, timeout=10)
+            # self.reach_position(0.752, 0.065, 0.184, 90,-93,90, timeout=10)
+            # self.reach_position(0.752, 0.065, 0.184, 90,0,90, timeout=10)
 
             # self.reach_position(0.314, 0.148, -0.145, -90, -180, 0, timeout=20)
             # self.reach_position(0.199, 0.156, -0.132, -90, -180, 90, timeout=20)
