@@ -337,6 +337,7 @@ def main():
     pose_msg = Pose()
     pose_msg.position.x = 0.85
     pose_msg.position.y = 0
+    pose_msg.position.z = 0
     example.callback_beer_position(pose_msg)
 
     # rospy.spin()
