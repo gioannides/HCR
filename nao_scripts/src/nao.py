@@ -26,13 +26,13 @@ class NAO(object):
         self.pub_to_arm = rospy.Publisher("/pour_drink", UInt8, queue_size=1)
         self.pub_to_kinect = rospy.Publisher("/tilt_angle",Float64, queue_size=1)
         self.parser = argparse.ArgumentParser()
-        self.parser.add_argument("--ip", type=str, default= "192.168.1.3",
+        self.parser.add_argument("--ip", type=str, default= "192.168.1.4",
                                     help="Robot ip address")
         self.parser.add_argument("--port", type=int, default=9559,
                             help="Robot port number")
 
         self.args = self.parser.parse_args()
-        robotIP = "192.168.1.3"
+        robotIP = "192.168.1.4"
         PORT = 9559
         self.tts    = ALProxy("ALTextToSpeech", robotIP, PORT)
         self.motionProxy = ALProxy("ALMotion", robotIP, PORT)
@@ -121,16 +121,16 @@ class NAO(object):
         else:
             if over18:
                 if(msg.data==1):
-                    self.choice="Stella Artois"
+                    self.choice="Camden Hells"
                 elif(msg.data==2):
-                    self.choice="Heineken"
+                    self.choice="BREW DOG PUNK I P A"
                 elif(msg.data==3):
-                    self.choice="Guiness"
+                    self.choice="BREW DOG DEAD PONY "
                 else:
-                    self.choice="The Non Alcoholic Option"
+                    self.choice="Coca Cola"
             else:
                 msg.data = 4        #translate the 'yes' into the correct drink
-                self.choice="The Non Alcoholic Option"
+                self.choice="Coca Cola"
 
             self.pub_to_arm.publish(msg) # tell arm to start pouring
             self.sub_ready = rospy.Subscriber("/drink_poured", Bool, self.callback_drink_ready) # wait until arm is done
@@ -149,9 +149,9 @@ class NAO(object):
             #time.sleep(3)
                 joke(self.tts, self.motionProxy, self.postureProxy)
             #time.sleep(3)
-            
+
             #time.sleep(3)
-            
+
             print("Entertain Done")
 
     def callback_drink_ready(self,msg):
