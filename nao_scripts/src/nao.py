@@ -6,30 +6,33 @@ import rospy
 import rospkg
 import time
 import argparse
+import random
 from std_msgs.msg import Bool,String, Float64, UInt8
 from cob_perception_msgs.msg import ColorDepthImageArray as FoundFace
 from naoqi import ALProxy
 import sys
 sys.path.append("/home/human/catkin_ws/src/HCR/nao_scripts/scripts")
-from nao2 import hello_ID,drink_select,choice,dance,joke,joke1,joke2,pickup
+from nao2 import hello_ID,drink_select,choice,dance,joke,joke1,joke2,pickup,goodbye,another
 
 sys.dont_write_bytecode = True
 
 
 class NAO(object):
     def __init__(self):
+
+        self.pub_interaction_complete = rospy.Publisher("/interaction_complete", Bool, queue_size=1)
         self.pub_customer_welcomed = rospy.Publisher("/customerwelcomed",String, queue_size=1)
         self.pub_to_screen = rospy.Publisher("/term1_displayScreenX",UInt8, queue_size=1)
         self.pub_to_arm = rospy.Publisher("/pour_drink", UInt8, queue_size=1)
         self.pub_to_kinect = rospy.Publisher("/tilt_angle",Float64, queue_size=1)
         self.parser = argparse.ArgumentParser()
-        self.parser.add_argument("--ip", type=str, default= "192.168.43.70",
-                            help="Robot ip address")
+        self.parser.add_argument("--ip", type=str, default= "192.168.1.3",
+                                    help="Robot ip address")
         self.parser.add_argument("--port", type=int, default=9559,
                             help="Robot port number")
 
         self.args = self.parser.parse_args()
-        robotIP = "192.168.43.70"
+        robotIP = "192.168.1.3"
         PORT = 9559
         self.tts    = ALProxy("ALTextToSpeech", robotIP, PORT)
         self.motionProxy = ALProxy("ALMotion", robotIP, PORT)
@@ -44,33 +47,74 @@ class NAO(object):
 
         self.sub_customer = rospy.Subscriber("/face_detector/face_positions", FoundFace, self.callback_hello, queue_size=1)
         print("NAO INIT DONE")
+        self.sub_wait = rospy.Subscriber("/term2_buttonPressed", UInt8, self.callback_wait_touchpad_done)
+
+    def callback_wait_touchpad_done(self,msg):
+        self.sub_customer.unregister()
+        self.sub_wait.unregister()
+        self.sub_interaction_complete = rospy.Subscriber("/interaction_complete", Bool, self.callback_touchpad_done)
+
+    def callback_touchpad_done(self,msg):
+        self.sub_interaction_complete.unregister()
+        time.sleep(1)
+        self.sub_wait = rospy.Subscriber("/term2_buttonPressed", UInt8, self.callback_wait_touchpad_done)
+        self.sub_customer = rospy.Subscriber("/face_detector/face_positions", FoundFace, self.callback_hello, queue_size=1)
+
+    # with ID detection
+    #--------------------
+
+    # def callback_hello(self,msg):
+    #     #print("HELLO CALLED")
+    #     if(len(msg.head_detections) > 0 ):
+    #         self.sub_customer.unregister() # stop looking for new people
+    #         hello_ID(self.tts,self.motionProxy,self.postureProxy) # nao says hello
+    #         self.pub_customer_welcomed.publish("Welcomed") # start ID scan
+    #         self.sub_age = rospy.Subscriber("/above18",Bool, self.callback_drink_select) # wait until ID confirmed
+
+    # def callback_drink_select(self,msg):
+    #     self.pub_to_kinect.publish(40) # move kinect back up
+    #     self.sub_age.unregister() # stop looking for age
+    #     print("Drink Select Called")
+    #     self.over18=msg
+    #     if msg.data==True:
+    #         self.pub_to_screen.publish(1) # select drink screen
+    #     else:
+    #         self.pub_to_screen.publish(7) # select drink screen for <18
+
+    #     self.sub_selected = rospy.Subscriber("/term1_buttonPressed",UInt8, self.callback_entertain, callback_args = self.over18)
+    #     drink_select(self.tts,self.motionProxy,self.postureProxy,msg) # move Nao to point at touchpad
+    #     print("Drink Select Done")
+
+
+    # without ID detection
+    #----------------------
 
     def callback_hello(self,msg):
         #print("HELLO CALLED")
         if(len(msg.head_detections) > 0 ):
+            self.pub_customer_welcomed.publish("Welcomed")
             self.sub_customer.unregister() # stop looking for new people
             hello_ID(self.tts,self.motionProxy,self.postureProxy) # nao says hello
-            self.pub_customer_welcomed.publish("Welcomed") # start ID scan
-            self.sub_age = rospy.Subscriber("/above18",Bool, self.callback_drink_select) # wait until ID confirmed
+            print("Drink Select Called")
+            self.pub_to_screen.publish(1) # select drink screen
+
+            self.over18 = True
+            self.sub_selected = rospy.Subscriber("/term1_buttonPressed",UInt8, self.callback_entertain, callback_args = self.over18)
+            drink_select(self.tts,self.motionProxy,self.postureProxy,self.over18) # move Nao to point at touchpad
+            print("Drink Select Done")
 
     def callback_drink_select(self,msg):
-        self.pub_to_kinect.publish(40) # move kinect back up
-        self.sub_age.unregister() # stop looking for age
-        print("Drink Select Called")
-        self.over18=msg
-        if msg.data==True
             self.pub_to_screen.publish(1) # select drink screen
-        else:
-            self.pub_to_screen.publish(7) # select drink screen for <18
 
-        self.sub_selected = rospy.Subscriber("/term1_buttonPressed",UInt8, self.callback_entertain, callback_args = self.over18)
-        drink_select(self.tts,self.motionProxy,self.postureProxy,msg) # move Nao to point at touchpad
-        print("Drink Select Done")
-
+            self.over18 = True
+            self.sub_selected = rospy.Subscriber("/term1_buttonPressed",UInt8, self.callback_entertain, callback_args = self.over18)
+            drink_select(self.tts,self.motionProxy,self.postureProxy,msg) # move Nao to point at touchpad
+            print("Drink Select Done")
+    # ------------------------------------------------------------------------------------------
 
     def callback_entertain(self,msg, over18):
         self.sub_selected.unregister() # ignore new button pressed
-        if (!over18 & msg.data==4): #if <18 and don't want non-alcoholic drink
+        if (over18==False & msg.data==4): #if <18 and don't want non-alcoholic drink
             self.pub_to_screen.publish(6) #publish goodbye
             time.sleep(3) # wait to avoid detecting same customer
             self.sub_customer = rospy.Subscriber("/face_detector/face_positions", FoundFace, self.callback_hello, queue_size=1)
@@ -92,14 +136,22 @@ class NAO(object):
             self.sub_ready = rospy.Subscriber("/drink_poured", Bool, self.callback_drink_ready) # wait until arm is done
             self.pub_to_screen.publish(2)
             choice(self.tts, self.motionProxy, self.postureProxy,self.choice) #drink selection
+
+            joke_no = random.randint(1,3)
+            print(joke_no)
+            if joke_no ==1:
+                joke1(self.tts, self.motionProxy, self.postureProxy)
+            elif joke_no ==2:
+                joke2(self.tts, self.motionProxy, self.postureProxy)
+            else:
             #print("Entertain Called")
             #dance(self.tts, self.motionProxy, self.postureProxy)
             #time.sleep(3)
-            #joke(self.tts, self.motionProxy, self.postureProxy)
+                joke(self.tts, self.motionProxy, self.postureProxy)
             #time.sleep(3)
-            #joke1(self.tts, self.motionProxy, self.postureProxy)
+            
             #time.sleep(3)
-            joke2(self.tts, self.motionProxy, self.postureProxy)
+            
             print("Entertain Done")
 
     def callback_drink_ready(self,msg):
@@ -109,6 +161,7 @@ class NAO(object):
         time.sleep(3)
         print("Drink Ready please collect function called")
         self.pub_to_screen.publish(3) # other drink?
+        another(self.tts, self.motionProxy, self.postureProxy)
         self.sub_selected = rospy.Subscriber("/term1_buttonPressed",UInt8, self.callback_anotherDrink)
 
     def callback_anotherDrink(self,msg):
@@ -123,6 +176,8 @@ class NAO(object):
             self.sub_selected.unregister()
             # restart process
             self.pub_to_screen.publish(6) #display goodbye screen
+            goodbye(self.tts, self.motionProxy, self.postureProxy)
+            self.pub_interaction_complete.publish(True)
             time.sleep(3) # wait to avoid detecting same customer
             self.sub_customer = rospy.Subscriber("/face_detector/face_positions", FoundFace, self.callback_hello, queue_size=1)
 

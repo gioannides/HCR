@@ -22,7 +22,7 @@ class KinovaNav(object):
 
         # Parse arguments
         self.args = utilities.parseConnectionArguments()
-
+        self.total_time = 0
         rospy.init_node("kinova_nav")
         self.pour_drink_sub = rospy.Subscriber("/pour_drink", UInt8, self.callback_pour, queue_size=1)
         self.beer_position_sub = rospy.Subscriber("/beer_position", Pose, self.callback_beer_position, queue_size=1)
@@ -52,9 +52,9 @@ class KinovaNav(object):
             sys.exit(0)
 
         self.base.ExecuteActionFromReference(action_handle)
-        time.sleep(10) # Leave time to action to complete
+        time.sleep(5) # Leave time to action to complete
 
-    def move_to_joints(self, a_0,a_1,a_2,a_3,a_4,a_5,a_6):
+    def move_to_joints(self, a_0,a_1,a_2,a_3,a_4,a_5,a_6, timeout=10):
         
         print("Starting angular action movement ...")
         action = Base_pb2.Action()
@@ -64,23 +64,42 @@ class KinovaNav(object):
         actuator_count = self.base.GetActuatorCount()
 
         joint_angles = {0:a_0,1:a_1,2:a_2,3:a_3,4:a_4,5:a_5,6:a_6}
-
+    
         # Place arm straight up
         for joint_id in range(actuator_count.count):
             joint_angle = action.reach_joint_angles.joint_angles.joint_angles.add()
             joint_angle.joint_identifier = joint_id
+            # print(joint_angle.value)
             joint_angle.value = joint_angles[joint_id]
-
+            # print(joint_angle.value)
         print("Executing action")
         self.base.ExecuteAction(action)
 
         print("Waiting 10 seconds for movement to finish ...")
-        time.sleep(10)
+        time.sleep(timeout)
+        # print(self.base.GetMeasuredJointAngles())
 
         print("Angular movement completed")
 
+    def nequiv_coord(self, x, y):
+        if (x > y):
+            if (x-y <= 0.01):
+                return False
+        else :
+            if (y-x <= 0.01):
+                return False
+        return True 
 
-    def reach_position(self, x, y, z, angle_x, angle_y, angle_z,timeout=20):
+    def nequiv_angle(self, x, y):
+        if (x > y):
+            if (x-y <= 0.75):
+                return False
+        else :
+            if (y-x <= 0.75):
+                return False
+        return True
+
+    def reach_position(self, x, y, z, angle_x=0, angle_y=0, angle_z=0, timeout=20,  log=False):
         
         print("Starting movement to pick up bottle")
         action = Base_pb2.Action()
@@ -99,8 +118,26 @@ class KinovaNav(object):
 
         print("Executing action")
         self.base.ExecuteAction(action)
-
-        time.sleep(timeout)
+        p = self.base.GetMeasuredCartesianPose()
+        start=time.time()
+        while(time.time() - start < 17 and (self.nequiv_coord(p.x, x) or self.nequiv_coord(p.y, y) or self.nequiv_coord(p.z, z) or self.nequiv_angle(p.theta_x, angle_x) or self.nequiv_angle(p.theta_y, angle_y) or self.nequiv_angle(p.theta_z, angle_z))):
+            # time.sleep(5)
+            # if(log):
+                # print(self.nequiv_coord(p.x, x))
+                # print(self.nequiv_coord(p.y, y))
+                # print(self.nequiv_coord(p.z, z))
+                # print(self.nequiv_angle(p.theta_x, angle_x))
+                # print(self.nequiv_angle(p.theta_y, angle_y)) 
+                # print(self.nequiv_angle(p.theta_z, angle_z))
+                # print("current position")
+                # print(p)
+                # print("desired position")
+                # print(cartesian_pose)
+                # print(time.time()-start)
+            p = self.base.GetMeasuredCartesianPose()
+        if(time.time()-start > 17):
+            print("movement timed out")    
+        time.sleep(0.5)    
 
         print("Cartesian movement completed")
 
@@ -120,7 +157,7 @@ class KinovaNav(object):
         action.application_data = ""
 
         actuator_count = self.base.GetActuatorCount()
-        print(self.base.GetMeasuredJointAngles())
+        # print(self.base.GetMeasuredJointAngles())
 
         # Place arm straight up
         for joint_id in range(actuator_count.count):
@@ -155,53 +192,6 @@ class KinovaNav(object):
         print("Waiting 10 seconds for movement to finish ...")
         time.sleep(10)
 
-    def pick_up_bottle(base):
-
-        #  # Create the GripperCommand we will send
-        # gripper_command = Base_pb2.GripperCommand()
-        # finger = gripper_command.gripper.finger.add()
-
-        # # Close the gripper with position increments
-        # print("Performing gripper test in position...")
-        # gripper_command.mode = Base_pb2.GRIPPER_POSITION
-        # position = 0.00
-        # finger.finger_identifier = 1
-        # while position < 1.0:
-        #     finger.value = position
-        #     base.SendGripperCommand(gripper_command)
-        #     position += 0.1
-        #     time.sleep(1)
-
-        # # Create the GripperCommand we will send
-        # gripper_command = Base_pb2.GripperCommand()
-        # finger = gripper_command.gripper.finger.add()
-
-        # # Close the gripper with position increments
-        # print("Performing gripper test in position...")
-        # gripper_command.mode = Base_pb2.GRIPPER_POSITION
-        # finger.finger_identifier = 1
-        
-        # finger.value = 0
-        # base.SendGripperCommand(gripper_command)
-        # time.sleep(1)
-
-        # finger.value = 0.2
-        # base.SendGripperCommand(gripper_command)
-        # time.sleep(1)
-
-        cartesian_pose = ControlConfig_pb2.Position()
-        print(cartesian_pose)
-        cartesian_pose     # (meters)
-        
-        print(cartesian_pose)
-
-        print("Reaching cartesian pose...")
-        base.PlayCartesianTrajectory(cartesian_pose)
-
-        print("Waiting 10 seconds for movement to finish ...")
-        time.sleep(5)
-
-
     def reach_gripper_position(self, x):
 
         # Create the GripperCommand we will send
@@ -215,7 +205,7 @@ class KinovaNav(object):
 
         finger.value = x
         self.base.SendGripperCommand(gripper_command)
-        time.sleep(5)
+        time.sleep(3)
 
     def section_position(self):
         x = 0.514
@@ -241,6 +231,7 @@ class KinovaNav(object):
         # go to the correct section
         section_pose = self.section_position()
         print(section_pose)
+        print(self.base.GetMeasuredCartesianPose())
         self.go_position(section_pose.position.x, section_pose.position.y, section_pose.position.z, 90, timeout=10)
 
     def convert_camera(self, msg):
@@ -280,23 +271,48 @@ class KinovaNav(object):
         return height
 
     def open_bottle(self):
-        height = self.get_bottle_height()
+        # height = self.get_bottle_height()
 
         reference = 0.215
+        dif = 0.025
 
+        self.move_to_joints(331.74,108.09,201.49,306.35,143.18,115.53,96.57,timeout=8)
+        # self.reach_position(0.2, 0.156, -0.132, -90, -179.99, 90)
+        # print("open bottle:")
+        # print(self.base.GetMeasuredCartesianPose())
 
-        self.move_to_joints(331.74,108.09,201.49,306.35,143.18,115.53,96.57)
 
         # reach open position
-        self.reach_position(0.162, 0.164, -0.09+reference-height, -90, -180, 93, timeout=10)
+    # self.reach_position(0.162, 0.164, -0.09+reference-height, -90, -180, 93, timeout=10)
+        self.reach_position(0.162, 0.164, -0.09-0.025, -90, -180, 93, timeout=10)
 
-        self.reach_position(0.162, 0.164+0.010, -0.09+0.005+reference-height, -90, -180, 93, timeout=10)
-        self.reach_position(0.162, 0.164+0.010, -0.09+0.003+reference-height, -90, -178, 93, timeout=10)
+        print("4")
+        # print(self.base.GetMeasuredJointAngles())
+        # self.reach_position(0.162, 0.164+0.010, -0.09+0.005+reference-height, -90, -180, 93, timeout=5)
+        self.reach_position(0.165, 0.164+0.007, -0.09-0.025, -90, -180, 93, timeout=5)
+
+        print("5")
+        # print(self.base.GetMeasuredJointAngles())
+        # self.reach_position(0.162, 0.164+0.010, -0.09+0.003+reference-height, -90, -178, 93, timeout=5)
+        self.reach_position(0.165, 0.164+0.007, -0.09-0.03, -90, -160, 93, timeout=1)
+
+        print("6")
+        # print(self.base.GetMeasuredJointAngles())
         self.reach_gripper_position(1)
-        self.reach_position(0.162, 0.164+0.010, -0.09+0.003-0.05+reference-height, -90, -175, 93, timeout=10)
-        self.reach_position(0.162+0.10, 0.164+0.010, -0.09+0.003-0.05+reference-height, -90, -175, 93, timeout=10)
+        # self.reach_position(0.162, 0.164+0.010, -0.09+0.003-0.05+reference-height, -90, -175, 93, timeout=5)
+        
+        self.reach_position(0.165, 0.164, -0.09-0.025, -90, -170, 93, timeout=5)
+        self.reach_position(0.165, 0.164+0.007, -0.09-0.025, -90, -170, 93, timeout=5)
 
-        self.example_move_to_home_position()
+        self.reach_position(0.165, 0.164+0.008, -0.09-0.055, -90, -170, 93, timeout=5)
+        print("7")
+        # print(self.base.GetMeasuredJointAngles())
+       
+        self.reach_position(0.165+0.05, 0.164+0.008, -0.09-0.055, -90, -175, 93, timeout=5)
+       
+        # 0.0493
+        print("8")
+        # print(self.base.GetMeasuredJointAngles())
 
     def opening_demo(self):
         # go towards the bottle
@@ -324,7 +340,7 @@ class KinovaNav(object):
     def callback_beer_position(self, msg):
 
         print('recieved from goerge')
-
+        st = time.time()
         pose_msg = self.convert_camera(msg)
 
         # Create connection to the device and get the router
@@ -333,22 +349,42 @@ class KinovaNav(object):
            
 
             # go towards the bottle
-            self.go_position(pose_msg.position.x - 0.1 + 0.02, pose_msg.position.y, 0.09, 90, timeout=10)
+            self.go_position(pose_msg.position.x - 0.1 + 0.02, pose_msg.position.y, 0.09, 90, timeout=7)
+            # print("1")
+            # print(self.base.GetMeasuredJointAngles())
             self.reach_gripper_position(0)
-            self.go_position(pose_msg.position.x + 0.02, pose_msg.position.y, 0.09, 90, timeout=10)
+            
+            self.go_position(pose_msg.position.x + 0.02, pose_msg.position.y, 0.09, 90, timeout=7)
             self.reach_gripper_position(1)
+            # print("2")
+            # print(self.base.GetMeasuredJointAngles())
             self.go_position(pose_msg.position.x + 0.02, pose_msg.position.y, 0.40, 90, timeout=5)
-
+            # print("3")
+            # print(self.base.GetMeasuredJointAngles())
             # self.move_to_section()
 
             #  pouring
-            self.example_move_to_home_position()
 
-            self.open_bottle()
+            # move home
+            # self.move_to_joints(360, 15, 180, 230, 360, 55, 90)
+            # self.example_move_to_home_position()
+            self.reach_position(0.577, 0.00136, 0.4336, 90, 0, 90)
 
-            self.example_move_to_home_position()
-
-            self.pour_bottle()
+            print("going home:")
+            print(self.base.GetMeasuredCartesianPose())
+            print("selection : {}".format(self.selection))
+            if(self.selection != 4):
+                self.open_bottle()
+                # move home
+                self.move_to_joints(360, 15, 180, 230, 360, 55, 90, timeout=7)
+                # self.example_move_to_home_position()
+                # self.reach_position(0.577, 0.00136, 0.4336, 90, 0, 90)
+                self.pour_bottle()
+            self.move_to_joints(96.92, 117.56, 280.03, 288.72, 332.69, 345.76, 358.18, timeout=5)
+            print("dropping bottle")
+            self.reach_gripper_position(0)
+            
+            
             # self.reach_gripper_position(1)
             # self.reach_position(0.333, -0.471, 0.434, 90,0,35.1, timeout=10)
             # self.reach_position(-0.044, -0.575, 0.434, -90,180,175.5, timeout=10)
@@ -397,34 +433,96 @@ class KinovaNav(object):
     # self.reach_position(0.55,0, 0.09,pi/2,0, pi/2)
     # time.sleep(2)
       # self.reach_position(0.55,0, 0.09,pi/2,0, pi/2)
-      
+        self.total_time += time.time() - st 
+        print("total time: {0}", self.total_time)
+
         self.drink_poured_pub.publish(True)
+        self.pour_drink_sub = rospy.Subscriber("/pour_drink", UInt8, self.callback_pour, queue_size=1)
     # except:
     #  self.drink_poured_pub.publish(False)
 
     def pour_bottle(self):
-        height = self.get_bottle_height()
-        reference = 0.245
-        self.move_to_joints(88.38,93.75,252.25,268.96,267.93,17.62,87.91)
-        self.reach_position(-0.583, -0.416+reference-height, 0.17, -90,180,90, timeout=10)
-        self.reach_position(-0.583, -0.41+reference-height, 0.17, -90,-115,90, timeout=20)
-        self.reach_position(-0.583, -0.38+reference-height, 0.17, -90,-95,90, timeout=5)
-        self.reach_position(-0.583, -0.36+reference-height, 0.17, -90,-90,90, timeout=5)
-        self.reach_position(-0.583, -0.35+reference-height, 0.17, -90,-88,90, timeout=10)
-        self.reach_position(-0.583, -0.416+reference-height, 0.17, -90,180,90, timeout=20)
+        # with utilities.DeviceConnection.createTcpConnection(self.args) as router:
+            # Create required services
+            # self.base = BaseClient(router)
+        # height = self.get_bottle_height()
+            reference = 0.245
+            self.move_to_joints(88.38,93.75,252.25,268.96,267.93,17.62,87.91, timeout=5.5)
+            print("pouring:")
+        # print(self.base.GetMeasuredCartesianPose())
 
+        # print("pour1")
+            self.reach_position(-0.583, -0.416, 0.19, -90,180,90, timeout=10, log=True)
+            print("pour2")
+            self.reach_position(-0.583, -0.41, 0.19, -90,-115,90, timeout=10, log = True)
+            # start pouring
+            self.reach_position(-0.583, -0.38, 0.19, -90,-105,90, timeout=5, log=True)
+            print("pour3")
+            self.reach_position(-0.583, -0.38, 0.19, -90,-95,90, timeout=5, log=True)
+            time.sleep(0.5)
+            print("pour4")
+            self.reach_position(-0.583, -0.365, 0.18, -90,-93,90, timeout=5, log=True)
+            print("pour5")
+            time.sleep(0.75)
+            self.reach_position(-0.583, -0.35, 0.18, -90,-89,90, timeout=5,log=True)
+            print("pour7")
+            time.sleep(0.75)
+            # self.reach_position(-0.583, -0.335, 0.18, -90,-89,90, timeout=5,log=True)
+            # print("pour8")
+            # time.sleep(2)
+            self.reach_position(-0.583, -0.335, 0.27, -90,-88,90, timeout=5,log=True)
+            print("pour9")
+            time.sleep(0.5)
+            self.reach_position(-0.583, -0.3, 0.35, -90,-95,90, timeout=5,log=True)
+            # self.reach_position(-0.583, -0.22, 0.40, -90, 180,90, timeout=5,log=True)
+            # print(self.base.GetMeasuredJointAngles())
+            self.move_to_joints(93.07, 62.45, 271.32, 239.69, 5.02, 33.13, 23.25, timeout=5)
+            print("pour10")
+            
+            # self.reach_position(-0.583, -0.416, 0.50, -90,180,90, timeout=20,log=True)
+            # self.move_to_joints(85.81, 61.43, 272.54, 275.02, 356.46, 351.28, 32.18)
 
     def callback_pour(self, msg):
         self.pour_drink_sub.unregister()
         print("navigating to section " + str(msg.data))
-
+        self.selection=msg.data
+        st = time.time()
         # Create connection to the device and get the router
         with utilities.DeviceConnection.createTcpConnection(self.args) as router:
             # Create required services
             self.base = BaseClient(router)
             self.table_num = msg.data
             # go towards the opener
-            self.example_move_to_home_position()
+
+            # move home
+            # print("joint speed limits:")
+            # print(self.base.GetAllJointsSpeedHardLimitation())      
+            # print("joint torque limits:")
+            # print(self.base.GetAllJointsTorqueSoftLimitation())      
+            # print("joint twist limits:")
+            # print(self.base.GetTwistSoftLimitation())      
+            # print("joint wrench limits:")
+            # print(self.base.GetWrenchSoftLimitation())      
+            # print("end of limits")
+            # print(self.base.GetMeasuredCartesianPose().x)
+            # print(self.base.GetMeasuredJointAngles().joint_angles.value[0])
+            self.move_to_joints(360, 15, 180, 230, 360, 55, 90, timeout=7)
+            print(self.base.GetMeasuredCartesianPose())
+
+            # print(self.base.GetMeasuredCartesianPose().x)
+            # self.example_move_to_home_position()
+            # print("let's see the angles after going home")
+            # print(self.base.GetMeasuredJointAngles())
+            # print("these are the angles")
+            # self.move_to_joints(331.74,108.09,201.49,306.35,143.18,115.53,96.57)
+            # print("let's see the angles of the angular move")
+            # print(self.base.GetMeasuredJointAngles())
+            # print("these are the angles")
+            
+            # print("let's see the angles of the angular move")
+            # print(self.base.GetMeasuredJointAngles())
+            # print("these are the angles")
+
             # self.open_bottle()
             # self.reach_position(0.314, 0.148, -0.145, -90, -180, 0, timeout=20)
             # self.move_to_joints(331.74,108.09,201.49,306.35,143.18,115.53,96.57)
@@ -556,12 +654,14 @@ class KinovaNav(object):
             # self.example_move_to_home_position()
             # self.go_upside_down()
             # self.go_position(0.49, 0, 0.1, pi/2, upside_down=True)
-
+        self.total_time = time.time() - st
         self.arm_in_position_pub.publish(msg)
+        
         print("published to george")
 
 def main():
     kinova = KinovaNav()
+    # kinova.pour_bottle()
     rospy.spin()
         
 

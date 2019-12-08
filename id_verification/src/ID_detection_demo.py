@@ -20,9 +20,12 @@ import numpy as np
 CARD_MAX_AREA= 120000
 CARD_MIN_AREA= 25000
 
+
+
 class IDDetector(object):
     def __init__(self):
 	#changed image to STRING PUT BACK
+        print(os.path.dirname(os.path.abspath(__file__)))
         self.pub_ID_image = rospy.Publisher("/above18", Bool, queue_size=1)
         self.pub_to_kinect = rospy.Publisher("/tilt_angle",Float64, queue_size=1)
 
@@ -33,6 +36,7 @@ class IDDetector(object):
         self.pub_edges = rospy.Publisher("/edges", Image, queue_size=1)
         self.pub_cropped_ID = rospy.Publisher("/cropped_ID", Image, queue_size=1)
         self.pub_red_mask = rospy.Publisher("/red_mask", Image, queue_size=1)
+        self.pub_faces = rospy.Publisher("/id_faces", Image, queue_size=1)
         self.cv_bridge = CvBridge()
 
         self.lower_threshold, self.upper_threshold = rospy.get_param("~lower_threshold", 50), rospy.get_param("~upper_threshold", 200)
@@ -40,7 +44,7 @@ class IDDetector(object):
         # Note: I recommend creating the subscriber always last, so that all other variables already exist
         # For images, make sure to set a large buff_size to avoid lags
         self.sub_customer_welcomed=rospy.Subscriber("/customerwelcomed",String,self.callback_tilt,queue_size=1)
-
+        self.face_cascade =cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
         print('Init done', self.lower_threshold, self.upper_threshold)
 
     def callback_tilt(self, msg):
@@ -53,10 +57,10 @@ class IDDetector(object):
         # First convert the ROS message to an OpenCV compatible image type
         img = self.cv_bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
         # adjust brightness and saturation of original image
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-        img[...,1] = img[...,1]*1.6
-        img[...,2] = img[...,2]*0.9
-        img = cv2.cvtColor(img, cv2.COLOR_HSV2BGR)
+        # img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        # img[...,1] = img[...,1]*1.6
+        # img[...,2] = img[...,2]*0.9
+        # img = cv2.cvtColor(img, cv2.COLOR_HSV2BGR)
 
         IMG = self.cv_bridge.cv2_to_imgmsg(img)
         self.pub_rectified_img.publish(IMG)
@@ -85,6 +89,17 @@ class IDDetector(object):
         cnts=sorted(cnts,key = cv2.contourArea, reverse = True)[:5]
         screenCnt=[]
         out= np.zeros_like(img)
+
+        # Convert to grayscale
+        img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        # Detect the faces
+        ID_faces = self.face_cascade.detectMultiScale(img_gray, 1.1, 4)
+        print("face classifier working")
+        # Draw rectangle around the faces
+        for (x, y, w, h) in ID_faces:
+            cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 0), 2)
+        faces_IMG = self.cv_bridge.cv2_to_imgmsg(img)
+        self.pub_faces.publish(faces_IMG)
         #loop over the contours
         for c in cnts:
             size= cv2.contourArea(c)
@@ -112,6 +127,13 @@ class IDDetector(object):
                 # (bottomy, bottomx) = (np.max(y),np.max(x))
                 # out= img[topy:bottomy+1, topx:bottomx+1]
                 ID_crop = four_point_transform(img, screenCnt.reshape(4, 2))
+
+                # #adding face detection after transform
+                # # Convert to grayscale
+                # ID_gray = cv2.cvtColor(np.float32(ID_crop), cv2.COLOR_BGR2GRAY)
+                # # Detect the faces
+                # ID_faces = self.face_cascade.detectMultiScale(ID_gray, 1.1, 4)
+
 
                 hsv_red = cv2.cvtColor(ID_crop, cv2.COLOR_BGR2HSV) #change colortype for openCV
 
@@ -146,11 +168,13 @@ class IDDetector(object):
                     approx = cv2.approxPolyDP(c,0.02 * peri, True)
                     print("size of red= {}".format(size))
                     print("number of sides = {}".format(len(approx)))
-                    if(size > 50 and len(approx)<20):
+                    if(size > 400 and len(approx)<20):
                         print("Under 18")
 
                 screenCnt=[]
                 cv2.drawContours(ID_crop, cnts_red, -1, (0,0,255),2)
+                for (x, y, w, h) in ID_faces:
+                    cv2.rectangle(ID_crop, (x, y), (x+w, y+h), (255, 0, 0), 2)
                 ID_img = self.cv_bridge.cv2_to_imgmsg(ID_crop)
                 self.pub_cropped_ID.publish(ID_img)
 

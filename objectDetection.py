@@ -133,8 +133,8 @@ height, width = color.shape[:2] #240, 424
 
 expected = 300
 aspect = width / height
-resized_image = cv2.resize(color, (round(expected * aspect), expected))
-crop_start = round(expected * (aspect - 1) / 2)
+resized_image = cv2.resize(color, (int(round(expected * aspect)), expected))
+crop_start = int(round(expected * (aspect - 1) / 2))
 crop_img = resized_image[0:expected, crop_start:crop_start+expected]
 
 arg1 = "MobileNetSSD_deploy.prototxt.txt"
@@ -185,7 +185,7 @@ for i in np.arange(0, detections.shape[2]):
     cv2.rectangle(colorized_depth, (xmin_depth, ymin_depth), 
                 (xmax_depth, ymax_depth), (255, 255, 255), 2)
     plt.imshow(colorized_depth)
-    plt.show()
+    # plt.show()
 
     x_depth_center = 0.5 * (xmax_depth + xmin_depth)
     y_depth_center = 0.5 * (ymax_depth + ymin_depth)
@@ -212,7 +212,8 @@ for i in np.arange(0, detections.shape[2]):
     results.append((realx, realy, realz, objectType, className))
 
 for item in results:
-    print("Detected a {0} of type {4} at (x, y, z) : {1:.3}, {2:.3}, {3:.3}.".format(item[4], item[0], item[1], item[2], item[3]))
+    # if (item[3]=="bottle"):
+        print("Detected a {0} of type {4} at (x, y, z) : {1:.3}, {2:.3}, {3:.3}.".format(item[4], item[0], item[1], item[2], item[3]))
 
 
 #The detections are in the list 'results' in the form of '(x, y, z, drinkType, className)'
