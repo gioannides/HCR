@@ -16,11 +16,11 @@ def hello_ID(tts, motionProxy, postureProxy):
     JointNamesL2 = ["LShoulderPitch", "LShoulderRoll", "LElbowYaw", "LElbowRoll", "LWristYaw", "LHand", "HeadYaw", "HeadPitch"]
 
     # waving right
-    Arm1 = [-70,  40, 0, -35, 20, 50]
+    Arm1 = [-70,  40, 0, -35, 20, 50, -20, -10]
     Arm1 = [ x * motion.TO_RAD for x in Arm1]
 
     # waving left
-    Arm2 = [-70,  40, 0, -75, -20, 50]
+    Arm2 = [-70,  40, 0, -75, -20, 50, -20, -10]
     Arm2 = [ x * motion.TO_RAD for x in Arm2]
 
     Arm3 = [-70,  40, 0, -35, 20, 50, -20, -10]
@@ -31,9 +31,9 @@ def hello_ID(tts, motionProxy, postureProxy):
     pFractionMaxSpeed1 = 0.2
 
     motionProxy.post.angleInterpolationWithSpeed(JointNamesL, Arm1, pFractionMaxSpeed)
-    motionProxy.angleInterpolationWithSpeed(JointNamesL, Arm2, pFractionMaxSpeed)
-    motionProxy.angleInterpolationWithSpeed(JointNamesL, Arm1, pFractionMaxSpeed)
-    motionProxy.angleInterpolationWithSpeed(JointNamesL, Arm2, pFractionMaxSpeed)
+    motionProxy.angleInterpolationWithSpeed(JointNamesL2, Arm2, pFractionMaxSpeed)
+    motionProxy.angleInterpolationWithSpeed(JointNamesL2, Arm1, pFractionMaxSpeed)
+    motionProxy.angleInterpolationWithSpeed(JointNamesL2, Arm2, pFractionMaxSpeed)
     motionProxy.angleInterpolationWithSpeed(JointNamesL2, Arm3, pFractionMaxSpeed1)
 
 
@@ -69,12 +69,12 @@ def drink_select(tts, motionProxy, postureProxy, above18):
     pFractionMaxSpeed3 = 0.25
     pFractionMaxSpeed4 = 0.09
 
-    tts.post.say("Please select the drink you want on the touch pad")
+    tts.post.say("Please select the drink you want by pressing a button to the left of the screen")
     motionProxy.post.angleInterpolationWithSpeed(Touchpad, Touchpad_position, pFractionMaxSpeed)
 
     if above18:
 
-        tts.post.say("We have a choice of Camden Hells, BREW DOG PUNK I P A, BREW DOG DEAD PONY and Coca Cola!")
+        tts.post.say("We have a choice of Camden Hells, BREW DOG PUNK I P A, BREW DOG ELVIS JUICE and Coca Cola!")
         motionProxy.angleInterpolationWithSpeed(Touchpad, Touchpad_position2, pFractionMaxSpeed2)
         motionProxy.angleInterpolationWithSpeed(Touchpad, Touchpad_position3, pFractionMaxSpeed4)
         motionProxy.angleInterpolationWithSpeed(Touchpad, Touchpad_position4, pFractionMaxSpeed4)
@@ -223,7 +223,7 @@ def joke2(tts, motionProxy, postureProxy):
     Joke2_position1H = [0,-20]
     Joke2_position1H = [ x * motion.TO_RAD for x in Joke2_position1H]
 
-    Joke2_position2H = [10,-20]
+    Joke2_position2H = [5,-20]
     Joke2_position2H = [ x * motion.TO_RAD for x in Joke2_position2H]
 
     pFractionMaxSpeed = 0.15
@@ -236,7 +236,7 @@ def joke2(tts, motionProxy, postureProxy):
     tts.post.say("A neutron walks into a bar.")
 
     time.sleep(2.0)
-    tts.post.say("How much for a drink? it says")
+    tts.post.say("it says, How much for a drink?")
     motionProxy.post.angleInterpolationWithSpeed(Joke2L, Joke2_position2L, pFractionMaxSpeed1)
     motionProxy.post.angleInterpolationWithSpeed(Joke2H, Joke2_position2H, pFractionMaxSpeed1)
 
@@ -273,7 +273,7 @@ def pickup(tts, motionProxy, postureProxy, drink):
     tts.post.say("You can pick it up from the bar!")
 
     # pointing at the ID reader
-    ID_position = [30,  -20, 0, -60, 0, 50,70,-50, 0, 0, 50, 50,-50,10]
+    ID_position = [30,  -20, 0, -60, 0, 50,70,-50, 0, 0, 50, 50,-50,20]
     ID_position = [ x * motion.TO_RAD for x in ID_position]
 
     pFractionMaxSpeed = 0.3
@@ -289,11 +289,11 @@ def goodbye(tts, motionProxy, postureProxy):
     JointNamesL2 = ["LShoulderPitch", "LShoulderRoll", "LElbowYaw", "LElbowRoll", "LWristYaw", "LHand", "HeadYaw", "HeadPitch"]
 
     # waving right
-    Arm1 = [-70,  40, 0, -35, 20, 50]
+    Arm1 = [-70,  40, 0, -35, 20, 50, 0, -20]
     Arm1 = [ x * motion.TO_RAD for x in Arm1]
 
     # waving left
-    Arm2 = [-70,  40, 0, -75, -20, 50]
+    Arm2 = [-70,  40, 0, -75, -20, 50, 0, -20]
     Arm2 = [ x * motion.TO_RAD for x in Arm2]
 
     tts.post.say("Enjoy your drink, and I hope to see you again soon! Goodbye")
@@ -301,14 +301,14 @@ def goodbye(tts, motionProxy, postureProxy):
     pFractionMaxSpeed = 0.35
     pFractionMaxSpeed1 = 0.2
 
-    motionProxy.post.angleInterpolationWithSpeed(JointNamesL, Arm1, pFractionMaxSpeed)
-    motionProxy.angleInterpolationWithSpeed(JointNamesL, Arm2, pFractionMaxSpeed)
-    motionProxy.angleInterpolationWithSpeed(JointNamesL, Arm1, pFractionMaxSpeed)
-    motionProxy.angleInterpolationWithSpeed(JointNamesL, Arm2, pFractionMaxSpeed)
-    motionProxy.angleInterpolationWithSpeed(JointNamesL, Arm1, pFractionMaxSpeed)
+    motionProxy.post.angleInterpolationWithSpeed(JointNamesL2, Arm1, pFractionMaxSpeed)
+    motionProxy.angleInterpolationWithSpeed(JointNamesL2, Arm2, pFractionMaxSpeed)
+    motionProxy.angleInterpolationWithSpeed(JointNamesL2, Arm1, pFractionMaxSpeed)
+    motionProxy.angleInterpolationWithSpeed(JointNamesL2, Arm2, pFractionMaxSpeed)
+    motionProxy.angleInterpolationWithSpeed(JointNamesL2, Arm1, pFractionMaxSpeed)
 
     Head = ["HeadYaw", "HeadPitch"]
-    Head_position1 = [0,-20]
+    Head_position1 = [-10,-20]
     Head_position1 = [ x * motion.TO_RAD for x in Head_position1]
     motionProxy.post.angleInterpolationWithSpeed(Head, Head_position1, pFractionMaxSpeed1)
 
@@ -327,8 +327,23 @@ def another(tts, motionProxy, postureProxy):
 
 
     tts.say("If you would like another drink, ")
-    tts.post.say("follow the instructions on the touch pad")
+    tts.post.say("follow the instructions on this butt ON pad")
     motionProxy.post.angleInterpolationWithSpeed(Touchpad, Touchpad_position, pFractionMaxSpeed)
+
+def watchArnold(tts, motionProxy, postureProxy):
+
+    tts.post.say("By the way, this is Arnold. You can watch him serve your drink!")
+    pFractionMaxSpeed = 0.2
+
+    # Joint matrix for the touchpad movement
+    Touchpad = ["LShoulderPitch", "LShoulderRoll", "LElbowYaw", "LElbowRoll", "LWristYaw", "LHand","RShoulderPitch", "RShoulderRoll", "RElbowYaw", "RElbowRoll", "RWristYaw", "RHand", "HeadYaw", "HeadPitch"]
+
+    # Pointing to the touchpad
+    Touchpad_position = [35,-18, 0, 0, -50, 50, 30, -76, 0, 30, 0, 50, -35,10]
+    Touchpad_position = [ x * motion.TO_RAD for x in Touchpad_position]
+
+    motionProxy.post.angleInterpolationWithSpeed(Touchpad, Touchpad_position, pFractionMaxSpeed)
+    postureProxy.goToPosture("StandInit",0.5)
 
 def main(ip, port):
 

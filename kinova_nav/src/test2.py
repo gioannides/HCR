@@ -30,7 +30,7 @@ class KinovaNav(object):
         self.drink_poured_pub = rospy.Publisher('/drink_poured', Bool, queue_size=1)
         self.arm_in_position_pub = rospy.Publisher("/arm_in_position", UInt8, queue_size=1)
 
- 
+        print("initialised correctly")
     def example_move_to_home_position(self):
         # Make sure the arm is in Single Level Servoing mode
         base_servo_mode = Base_pb2.ServoingModeInformation()
@@ -138,6 +138,31 @@ class KinovaNav(object):
         if(time.time()-start > 17):
             print("movement timed out")    
         time.sleep(0.5)    
+
+        print("Cartesian movement completed")
+
+
+    def reach_position2(self, x, y, z, angle_x=0, angle_y=0, angle_z=0, timeout=20):
+        
+        print("Starting movement to pick up bottle")
+        action = Base_pb2.Action()
+        action.name = "Picking up Bottle"
+        action.application_data = ""
+
+        cartesian_pose = action.reach_pose.target_pose
+        cartesian_pose.x = x
+        cartesian_pose.y = y
+        cartesian_pose.z = z
+        cartesian_pose.theta_x = angle_x
+        cartesian_pose.theta_y = angle_y
+        cartesian_pose.theta_z = angle_z
+
+        print(cartesian_pose)
+
+        print("Executing action")
+        self.base.ExecuteAction(action)
+
+        time.sleep(timeout)    
 
         print("Cartesian movement completed")
 
@@ -304,7 +329,33 @@ class KinovaNav(object):
         self.reach_position(0.165, 0.164, -0.09-0.025, -90, -170, 93, timeout=5)
         self.reach_position(0.165, 0.164+0.007, -0.09-0.025, -90, -170, 93, timeout=5)
 
-        self.reach_position(0.165, 0.164+0.008, -0.09-0.055, -90, -170, 93, timeout=5)
+        # self.reach_position(0.165, 0.164+0.008, -0.09-0.055, -90, -170, 93, timeout=5)
+        # print(self.base.GetMeasuredJointAngles())
+        self.move_to_joints(325.84, 109.29, 202.15, 303.52, 140.48, 112.98, 88.20, timeout=4)
+        # --------------------------------------------------------------------------------------
+        # self.reach_position(0.162, 0.164, -0.09-0.027, -90, -180, 93, timeout=10)
+
+        # print("4")
+        # # print(self.base.GetMeasuredJointAngles())
+        # # self.reach_position(0.162, 0.164+0.010, -0.09+0.005+reference-height, -90, -180, 93, timeout=5)
+        # self.reach_position(0.165, 0.164+0.007, -0.09-0.027, -90, -180, 93, timeout=5)
+
+        # print("5")
+        # # print(self.base.GetMeasuredJointAngles())
+        # # self.reach_position(0.162, 0.164+0.010, -0.09+0.003+reference-height, -90, -178, 93, timeout=5)
+        # self.reach_position(0.165, 0.164+0.007, -0.09-0.027, -90, -160, 93, timeout=1)
+
+        # print("6")
+        # # print(self.base.GetMeasuredJointAngles())
+        # self.reach_gripper_position(1)
+        # # self.reach_position(0.162, 0.164+0.010, -0.09+0.003-0.05+reference-height, -90, -175, 93, timeout=5)
+        
+        # self.reach_position(0.165, 0.164, -0.09-0.027, -90, -170, 93, timeout=5)
+        # self.reach_position(0.165, 0.164+0.007, -0.09-0.027, -90, -170, 93, timeout=5)
+        # self.move_to_joints(325.84, 109.29, 202.15, 303.52, 140.48, 112.98, 88.20, timeout=4)
+        # self.move_to_joints(325.84, 109.29, 202.15, 303.52, 140.48, 112.98, 88.20)
+
+        # time.sleep(20)
         print("7")
         # print(self.base.GetMeasuredJointAngles())
        
@@ -379,11 +430,15 @@ class KinovaNav(object):
                 self.move_to_joints(360, 15, 180, 230, 360, 55, 90, timeout=7)
                 # self.example_move_to_home_position()
                 # self.reach_position(0.577, 0.00136, 0.4336, 90, 0, 90)
-                self.pour_bottle()
+                # self.pour_bottle()
             self.move_to_joints(96.92, 117.56, 280.03, 288.72, 332.69, 345.76, 358.18, timeout=5)
             print("dropping bottle")
             self.reach_gripper_position(0)
-            
+            #time.sleep(3)
+            self.move_to_joints(74.59, 78.12, 274.34, 259.09, 349.91, 355.85, 22.69, timeout=5)
+
+            self.example_move_to_home_position()
+            self.drink_poured_pub.publish(True)
             
             # self.reach_gripper_position(1)
             # self.reach_position(0.333, -0.471, 0.434, 90,0,35.1, timeout=10)
@@ -436,7 +491,6 @@ class KinovaNav(object):
         self.total_time += time.time() - st 
         print("total time: {0}", self.total_time)
 
-        self.drink_poured_pub.publish(True)
         self.pour_drink_sub = rospy.Subscriber("/pour_drink", UInt8, self.callback_pour, queue_size=1)
     # except:
     #  self.drink_poured_pub.publish(False)
@@ -452,32 +506,50 @@ class KinovaNav(object):
         # print(self.base.GetMeasuredCartesianPose())
 
         # print("pour1")
-            self.reach_position(-0.583, -0.416, 0.19, -90,180,90, timeout=10, log=True)
+            self.reach_position(-0.583, -0.416, 0.185, -90,180,90, timeout=10, log=True)
             print("pour2")
-            self.reach_position(-0.583, -0.41, 0.19, -90,-115,90, timeout=10, log = True)
+            self.reach_position(-0.583, -0.405, 0.185, -90,-115,90, timeout=10, log = True)
             # start pouring
-            self.reach_position(-0.583, -0.38, 0.19, -90,-105,90, timeout=5, log=True)
-            print("pour3")
-            self.reach_position(-0.583, -0.38, 0.19, -90,-95,90, timeout=5, log=True)
-            time.sleep(0.5)
-            print("pour4")
-            self.reach_position(-0.583, -0.365, 0.18, -90,-93,90, timeout=5, log=True)
-            print("pour5")
-            time.sleep(0.75)
-            self.reach_position(-0.583, -0.35, 0.18, -90,-89,90, timeout=5,log=True)
-            print("pour7")
-            time.sleep(0.75)
-            # self.reach_position(-0.583, -0.335, 0.18, -90,-89,90, timeout=5,log=True)
-            # print("pour8")
-            # time.sleep(2)
-            self.reach_position(-0.583, -0.335, 0.27, -90,-88,90, timeout=5,log=True)
-            print("pour9")
-            time.sleep(0.5)
-            self.reach_position(-0.583, -0.3, 0.35, -90,-95,90, timeout=5,log=True)
-            # self.reach_position(-0.583, -0.22, 0.40, -90, 180,90, timeout=5,log=True)
-            # print(self.base.GetMeasuredJointAngles())
-            self.move_to_joints(93.07, 62.45, 271.32, 239.69, 5.02, 33.13, 23.25, timeout=5)
-            print("pour10")
+            self.reach_position2(-0.583, -0.405, 0.185, -90,-93,90, timeout=6)
+            self.reach_position2(-0.583, -0.405, 0.185, -90,-101,90, timeout=3)
+            self.reach_position2(-0.583, -0.395, 0.185, -90,-101,90, timeout=3)
+            self.reach_position2(-0.583, -0.395, 0.185, -90,-90,90, timeout=2.2)
+            self.reach_position2(-0.583, -0.395, 0.185, -90,-98,90, timeout=3)
+            self.reach_position2(-0.583, -0.385, 0.185, -90,-98,90, timeout=7)
+            self.reach_position2(-0.583, -0.385, 0.185, -90,-87.5,90, timeout=2.2)
+            self.reach_position2(-0.583, -0.385, 0.185, -90,-95,90, timeout=3)
+            self.reach_position2(-0.583, -0.376, 0.185, -90,-95,90, timeout=3)
+            self.reach_position2(-0.583, -0.376, 0.185, -90,-85,90, timeout=2)
+            self.reach_position(-0.583, -0.416, 0.185, -90,180,90, timeout=10, log = True)
+
+            # self.reach_position(-0.583, -0.41, 0.185, -90,-110,90, timeout=3, log = True)
+            # self.reach_position(-0.583, -0.38, 0.185, -90,-110,90, timeout=3, log=True)
+            # self.reach_position(-0.583, -0.38, 0.185, -90,-95,90, timeout=3, log=True)
+            # self.reach_position(-0.583, -0.38, 0.185, -90,-100,90, timeout=3, log=True)
+            # self.reach_position(-0.583, -0.365, 0.185, -90,-93,90, timeout=3, log=True)
+            # self.reach_position(-0.583, -0.365, 0.185, -90,-96,90, timeout=3, log=True)
+            # print("pour3")
+
+            # self.reach_position(-0.583, -0.38, 0.19, -90,-95,90, timeout=5, log=True)
+            # time.sleep(0.5)
+            # print("pour4")
+            # self.reach_position(-0.583, -0.365, 0.18, -90,-93,90, timeout=5, log=True)
+            # print("pour5")
+            # time.sleep(0.75)
+            # self.reach_position(-0.583, -0.35, 0.18, -90,-89,90, timeout=5,log=True)
+            # print("pour7")
+            # time.sleep(0.75)
+            # # self.reach_position(-0.583, -0.335, 0.18, -90,-89,90, timeout=5,log=True)
+            # # print("pour8")
+            # # time.sleep(2)
+            # self.reach_position(-0.583, -0.335, 0.27, -90,-88,90, timeout=5,log=True)
+            # print("pour9")
+            # time.sleep(0.5)
+            # self.reach_position(-0.583, -0.3, 0.35, -90,-95,90, timeout=5,log=True)
+            # # self.reach_position(-0.583, -0.22, 0.40, -90, 180,90, timeout=5,log=True)
+            # # print(self.base.GetMeasuredJointAngles())
+            # self.move_to_joints(93.07, 62.45, 271.32, 239.69, 5.02, 33.13, 23.25, timeout=5)
+            # print("pour10")
             
             # self.reach_position(-0.583, -0.416, 0.50, -90,180,90, timeout=20,log=True)
             # self.move_to_joints(85.81, 61.43, 272.54, 275.02, 356.46, 351.28, 32.18)
@@ -506,8 +578,8 @@ class KinovaNav(object):
             # print("end of limits")
             # print(self.base.GetMeasuredCartesianPose().x)
             # print(self.base.GetMeasuredJointAngles().joint_angles.value[0])
-            self.move_to_joints(360, 15, 180, 230, 360, 55, 90, timeout=7)
-            print(self.base.GetMeasuredCartesianPose())
+            # self.move_to_joints(360, 15, 180, 230, 360, 55, 90, timeout=7)
+            # print(self.base.GetMeasuredCartesianPose())
 
             # print(self.base.GetMeasuredCartesianPose().x)
             # self.example_move_to_home_position()

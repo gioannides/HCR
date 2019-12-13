@@ -12,7 +12,7 @@ from cob_perception_msgs.msg import ColorDepthImageArray as FoundFace
 from naoqi import ALProxy
 import sys
 sys.path.append("/home/human/catkin_ws/src/HCR/nao_scripts/scripts")
-from nao2 import hello_ID,drink_select,choice,dance,joke,joke1,joke2,pickup,goodbye,another
+from nao2 import hello_ID,drink_select,choice,dance,joke,joke1,joke2,pickup,goodbye,another,watchArnold
 
 sys.dont_write_bytecode = True
 
@@ -26,13 +26,13 @@ class NAO(object):
         self.pub_to_arm = rospy.Publisher("/pour_drink", UInt8, queue_size=1)
         self.pub_to_kinect = rospy.Publisher("/tilt_angle",Float64, queue_size=1)
         self.parser = argparse.ArgumentParser()
-        self.parser.add_argument("--ip", type=str, default= "192.168.1.4",
+        self.parser.add_argument("--ip", type=str, default= "192.168.1.2",
                                     help="Robot ip address")
         self.parser.add_argument("--port", type=int, default=9559,
                             help="Robot port number")
 
         self.args = self.parser.parse_args()
-        robotIP = "192.168.1.4"
+        robotIP = "192.168.1.2"
         PORT = 9559
         self.tts    = ALProxy("ALTextToSpeech", robotIP, PORT)
         self.motionProxy = ALProxy("ALMotion", robotIP, PORT)
@@ -125,7 +125,7 @@ class NAO(object):
                 elif(msg.data==2):
                     self.choice="BREW DOG PUNK I P A"
                 elif(msg.data==3):
-                    self.choice="BREW DOG DEAD PONY "
+                    self.choice="BREW DOG ELVIS JUICE "
                 else:
                     self.choice="Coca Cola"
             else:
@@ -136,13 +136,16 @@ class NAO(object):
             self.sub_ready = rospy.Subscriber("/drink_poured", Bool, self.callback_drink_ready) # wait until arm is done
             self.pub_to_screen.publish(2)
             choice(self.tts, self.motionProxy, self.postureProxy,self.choice) #drink selection
+            time.sleep(4)
 
             joke_no = random.randint(1,3)
             print(joke_no)
             if joke_no ==1:
                 joke1(self.tts, self.motionProxy, self.postureProxy)
             elif joke_no ==2:
+            # time.sleep(2.5)
                 joke2(self.tts, self.motionProxy, self.postureProxy)
+            # time.sleep(2.5)
             else:
             #print("Entertain Called")
             #dance(self.tts, self.motionProxy, self.postureProxy)
@@ -150,7 +153,8 @@ class NAO(object):
                 joke(self.tts, self.motionProxy, self.postureProxy)
             #time.sleep(3)
 
-            #time.sleep(3)
+            time.sleep(4)
+            watchArnold(self.tts, self.motionProxy, self.postureProxy)
 
             print("Entertain Done")
 
@@ -178,7 +182,9 @@ class NAO(object):
             self.pub_to_screen.publish(6) #display goodbye screen
             goodbye(self.tts, self.motionProxy, self.postureProxy)
             self.pub_interaction_complete.publish(True)
-            time.sleep(3) # wait to avoid detecting same customer
+            time.sleep(10) # wait to avoid detecting same customer
+            self.pub_to_screen.publish(1)
+            self.sub_selected = rospy.Subscriber("/term1_buttonPressed",UInt8, self.callback_entertain, callback_args = self.over18)
             self.sub_customer = rospy.Subscriber("/face_detector/face_positions", FoundFace, self.callback_hello, queue_size=1)
 
 if __name__ == "__main__":

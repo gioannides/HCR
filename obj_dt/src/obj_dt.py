@@ -119,11 +119,6 @@ class obj_dt(object):
         # config.enable_stream(rs.stream.infrared, 2)
         profile = pipe.start()
 
-
-        # Skip 15 first frames to give the Auto-Exposure time to adjust
-        for x in range(15):
-            pipe.wait_for_frames()
-
         frameset = None
         color_frame = None
         depth_frame = None
@@ -131,6 +126,10 @@ class obj_dt(object):
         success = False
         while(not success):
             try:
+                # Skip 15 first frames to give the Auto-Exposure time to adjust
+                for x in range(15):
+                    pipe.wait_for_frames()
+
                 # Store next frameset for later processing:
                 frameset = pipe.wait_for_frames()
                 color_frame = frameset.get_color_frame()
