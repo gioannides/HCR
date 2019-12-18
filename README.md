@@ -130,7 +130,7 @@ All of the kinova arm navigation is done by the [./kinova_nav/src/nav.py](kinova
 * **Omar Muttawa** - [Omar-Muttawa](https://github.com/Omar-Muttawa)
 * **Andrei Pietreanu** - [Pietreanu](https://github.com/Pietreanu)
 
-Special thanks to our Human Centred Professor:
+Special thanks to our Human Centred Robotics Professor:
 
 * **Prof. Yiannis Demiris** - [YiannisDemiris](https://github.com/YiannisDemiris)
 
