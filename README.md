@@ -20,7 +20,7 @@ source ~/.bashrc
 
 ## Experiment set up
 
-![alt text](../blob/master/images/setup.png?raw=true "setup")
+![alt text](../master/images/setup.png?raw=true "setup")
 
 Adjust the code values to match your set up, the setup for our experiment was:
 - The 3d printed bottle opener should be 20 cm away from the kinova base attached to the top of an another kinova clamp.
@@ -101,14 +101,14 @@ in a new tab roslaunch master system.launch
 
 The rostopics and the ROS nodes created when launching all of the files with the instructions above is summarized below:
 
-![alt text](../blob/master/images/ros_diagram.png?raw=true "ROS Diagram")
+![alt text](../master/images/ros_diagram.png?raw=true "ROS Diagram")
 
 
 ## Kinova Arm navigation explained
 
 All of the kinova arm navigation is done by the [./kinova_nav/src/nav.py](kinova_nav/src/nav.py) file. The way it works and all the states can be seen in the diagram below.
 
-![alt text](../blob/master/images/HCR.png?raw=true "Kinova states explained")
+![alt text](../master/images/HCR.png?raw=true "Kinova states explained")
 
 
 
