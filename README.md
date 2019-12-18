@@ -92,7 +92,7 @@ in a new tab roslaunch master system.launch
 - id_verification - contains files used for id_detection and verification for Imperial College student IDs
 - kinova_nav - contatins files for controlling the kinova arm: nav.py contains the ros_kortex python API implemnation and navigate2.py the latest MoveIt! implementation 
 - master - contains the ros launch file used for most packages
-- nap_scripts - contains the file used to control the NAO
+- nao_scripts - contains the file used to control the NAO
 - obj_dt - contains the object detection algorithm that return the coordinates of the closest bottle 
 - only_touchpad - contains the code to create a ROS node for the touchpad only implemetnation for the experiment 
 - touch_screen - contains the code that needs to be preloaded on the Rasberry PIs of the touchpads
