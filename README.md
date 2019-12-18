@@ -125,7 +125,7 @@ All of the kinova arm navigation is done by the [./kinova_nav/src/nav.py](kinova
 * **Clementine Beit** - [clementinebiet](https://github.com/clementinebiet)
 * **Georgia Grand** - [GeorgiaGrand](https://github.com/GeorgiaGrand)
 * **Emilie d'Olne** - [ed1016](https://github.com/ed1016)
-* **George Ioannides** - [gioannides](https://github.com/gioannides)
+* **Georgios Ioannides** - [gioannides](https://github.com/gioannides)
 * **Leszek Nowaczyk** - [kyczawon](https://github.com/kyczawon)
 * **Omar Muttawa** - [Omar-Muttawa](https://github.com/Omar-Muttawa)
 * **Andrei Pietreanu** - [Pietreanu](https://github.com/Pietreanu)
