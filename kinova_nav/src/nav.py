@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+# This file executes the beer bot code for the Kinova arm using the python API - the IP address needs to be specified correctly in the utilities.py file
 import sys
 import os
 import time
